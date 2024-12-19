@@ -21,19 +21,19 @@ pub mod debug;
 
 pub mod prelude {
     pub use crate::debug::prelude::*;
-    pub use crate::SkinnedBoundsPlugin;
+    pub use crate::SkinnedAabbPlugin;
 }
 
 #[derive(Default)]
-pub struct SkinnedBoundsPlugin;
+pub struct SkinnedAabbPlugin;
 
-impl Plugin for SkinnedBoundsPlugin {
+impl Plugin for SkinnedAabbPlugin {
     fn build(&self, app: &mut App) {
-        app.init_asset::<SkinnedBoundsAsset>()
-            .add_systems(Update, create_skinned_bounds)
+        app.init_asset::<SkinnedAabbAsset>()
+            .add_systems(Update, create_skinned_aabbs)
             .add_systems(
                 PostUpdate,
-                update_skinned_bounds
+                update_skinned_aabbs
                     // TODO: Verify ordering.
                     .after(TransformSystem::TransformPropagate)
                     .before(VisibilitySystems::CheckVisibility),
@@ -70,49 +70,49 @@ impl From<Aabb3d> for PackedAabb3d {
 }
 
 #[derive(Asset, Debug, TypePath)]
-pub struct SkinnedBoundsAsset {
+pub struct SkinnedAabbAsset {
     // The source mesh and inverse bindpose assets. We keep these so that entities can
-    // reuse existing SkinnedBoundsAssets.
+    // reuse existing SkinnedAabbAssets.
     pub mesh: AssetId<Mesh>,
     pub inverse_bindposes: AssetId<SkinnedMeshInverseBindposes>,
 
-    // Bounds for skinned joints.
-    pub bounds: Box<[PackedAabb3d]>,
+    // Aabbs for each skinned joints.
+    pub aabbs: Box<[PackedAabb3d]>,
 
-    // Mapping from bounds index to SkinnedMesh::joints index.
-    pub bound_to_joint: Box<[JointIndex]>,
+    // Mapping from aabb index to SkinnedMesh::joints index.
+    pub aabb_to_joint: Box<[JointIndex]>,
 }
 
-impl SkinnedBoundsAsset {
-    pub fn aabb(&self, bound_index: usize) -> Aabb3d {
-        self.bounds[bound_index].into()
+impl SkinnedAabbAsset {
+    pub fn aabb(&self, aabb_index: usize) -> Aabb3d {
+        self.aabbs[aabb_index].into()
     }
 
     pub fn world_from_joint(
         &self,
-        bound_index: usize,
+        aabb_index: usize,
         skinned_mesh: &SkinnedMesh,
         joints: &Query<&GlobalTransform>,
     ) -> Option<Affine3A> {
         // TODO: Should return an error instead of silently failing?
-        let joint_index = *self.bound_to_joint.get(bound_index)? as usize;
+        let joint_index = *self.aabb_to_joint.get(aabb_index)? as usize;
         let joint_entity = *skinned_mesh.joints.get(joint_index)?;
 
         Some(joints.get(joint_entity).ok()?.affine())
     }
 
-    pub fn num_bounds(&self) -> usize {
-        self.bounds.len()
+    pub fn num_aabbs(&self) -> usize {
+        self.aabbs.len()
     }
 }
 
 #[derive(Component, Debug, Default)]
-pub struct SkinnedBounds {
-    // Optional asset. This is optional because the skinned bounds can fail to create due to missing
+pub struct SkinnedAabb {
+    // Optional asset. This is optional because the skinned aabb can fail to create due to missing
     // assets, but we still need to add the component so we don't attempt to recreate it next frame.
     //
-    // If the skinned bounds creation is moved into the asset pipeline then this doesn't need to be optional.
-    pub asset: Option<Handle<SkinnedBoundsAsset>>,
+    // If the skinned aabb creation is moved into the asset pipeline then this doesn't need to be optional.
+    pub asset: Option<Handle<SkinnedAabbAsset>>,
 }
 
 // Return an aabb that contains the given point and optional aabb.
@@ -216,74 +216,74 @@ impl Iterator for InfluenceIterator<'_> {
     }
 }
 
-fn create_skinned_bounds_asset(
+fn create_skinned_aabb_asset(
     mesh: &Mesh,
     mesh_handle: AssetId<Mesh>,
     inverse_bindposes: &SkinnedMeshInverseBindposes,
     inverse_bindposes_handle: AssetId<SkinnedMeshInverseBindposes>,
-) -> SkinnedBoundsAsset {
+) -> SkinnedAabbAsset {
     let num_joints = inverse_bindposes.len();
 
     // TODO: Error if num_joints exceeds JointIndex limits?
 
-    // Calculate the jointspace bounds for each joint.
+    // Calculate the jointspace aabb for each joint.
 
-    let mut optional_bounds: Vec<Option<Aabb3d>> = vec![None; num_joints];
+    let mut optional_aabbs: Vec<Option<Aabb3d>> = vec![None; num_joints];
 
     for Influence {
         position,
         joint_index,
     } in InfluenceIterator::new(mesh)
     {
-        assert!(joint_index < optional_bounds.len());
+        assert!(joint_index < optional_aabbs.len());
 
         let jointspace_position = inverse_bindposes[joint_index].transform_point3(position);
 
-        optional_bounds[joint_index] = Some(merge(
-            optional_bounds[joint_index],
+        optional_aabbs[joint_index] = Some(merge(
+            optional_aabbs[joint_index],
             Vec3A::from(jointspace_position),
         ));
     }
 
-    // Filter out any joints without bounds.
+    // Filter out any joints without an aabb.
 
-    let num_bounds = optional_bounds.iter().filter(|o| o.is_some()).count();
+    let num_aabbs = optional_aabbs.iter().filter(|o| o.is_some()).count();
 
-    let mut bounds = Vec::<PackedAabb3d>::with_capacity(num_bounds);
-    let mut bound_to_joint = Vec::<JointIndex>::with_capacity(num_bounds);
+    let mut aabbs = Vec::<PackedAabb3d>::with_capacity(num_aabbs);
+    let mut aabb_to_joint = Vec::<JointIndex>::with_capacity(num_aabbs);
 
-    for (joint_index, _) in optional_bounds.iter().enumerate() {
-        if let Some(bound) = optional_bounds[joint_index] {
-            bounds.push(bound.into());
-            bound_to_joint.push(joint_index as JointIndex);
+    for (joint_index, _) in optional_aabbs.iter().enumerate() {
+        if let Some(aabb) = optional_aabbs[joint_index] {
+            aabbs.push(aabb.into());
+            aabb_to_joint.push(joint_index as JointIndex);
         }
     }
 
-    assert!(bounds.len() == num_bounds);
-    assert!(bound_to_joint.len() == num_bounds);
+    assert!(aabbs.len() == num_aabbs);
+    assert!(aabb_to_joint.len() == num_aabbs);
 
-    SkinnedBoundsAsset {
+    SkinnedAabbAsset {
         mesh: mesh_handle,
         inverse_bindposes: inverse_bindposes_handle,
-        bounds: bounds.into(),
-        bound_to_joint: bound_to_joint.into(),
+        aabbs: aabbs.into(),
+        aabb_to_joint: aabb_to_joint.into(),
     }
 }
 
-fn create_skinned_bounds_component(
-    skinned_bounds_assets: &mut ResMut<Assets<SkinnedBoundsAsset>>,
+fn create_skinned_aabb_component(
+    skinned_aabb_assets: &mut ResMut<Assets<SkinnedAabbAsset>>,
     mesh_assets: &Res<Assets<Mesh>>,
     mesh_handle: &Handle<Mesh>,
     inverse_bindposes_assets: &Res<Assets<SkinnedMeshInverseBindposes>>,
     inverse_bindposes_handle: &Handle<SkinnedMeshInverseBindposes>,
-) -> SkinnedBounds {
+) -> SkinnedAabb {
     // First check for an existing asset.
 
-    for (existing_asset_id, existing_asset) in skinned_bounds_assets.iter() {
+    for (existing_asset_id, existing_asset) in skinned_aabb_assets.iter() {
         if (existing_asset.mesh == mesh_handle.id())
             & (existing_asset.inverse_bindposes == inverse_bindposes_handle.id())
         {
-            return SkinnedBounds {
+            return SkinnedAabb {
                 asset: Some(Handle::Weak(existing_asset_id)),
             };
         }
@@ -295,40 +295,40 @@ fn create_skinned_bounds_component(
         mesh_assets.get(mesh_handle),
         inverse_bindposes_assets.get(inverse_bindposes_handle),
     ) {
-        let asset = create_skinned_bounds_asset(
+        let asset = create_skinned_aabb_asset(
             mesh,
             mesh_handle.id(),
             inverse_bindposes,
             inverse_bindposes_handle.id(),
         );
 
-        let asset_handle = skinned_bounds_assets.add(asset);
+        let asset_handle = skinned_aabb_assets.add(asset);
 
-        return SkinnedBounds {
+        return SkinnedAabb {
             asset: Some(asset_handle),
         };
     }
 
-    SkinnedBounds { asset: None }
+    SkinnedAabb { asset: None }
 }
 
-fn create_skinned_bounds(
+fn create_skinned_aabbs(
     mut commands: Commands,
     mesh_assets: Res<Assets<Mesh>>,
     inverse_bindposes_assets: Res<Assets<SkinnedMeshInverseBindposes>>,
-    mut skinned_bounds_assets: ResMut<Assets<SkinnedBoundsAsset>>,
-    query: Query<(Entity, &Mesh3d, &SkinnedMesh), Without<SkinnedBounds>>,
+    mut skinned_aabb_assets: ResMut<Assets<SkinnedAabbAsset>>,
+    query: Query<(Entity, &Mesh3d, &SkinnedMesh), Without<SkinnedAabb>>,
 ) {
     for (entity, mesh, skinned_mesh) in &query {
-        let skinned_bounds = create_skinned_bounds_component(
-            &mut skinned_bounds_assets,
+        let skinned_aabb = create_skinned_aabb_component(
+            &mut skinned_aabb_assets,
             &mesh_assets,
             &mesh.0,
             &inverse_bindposes_assets,
             &skinned_mesh.inverse_bindposes,
         );
 
-        commands.entity(entity).try_insert(skinned_bounds);
+        commands.entity(entity).try_insert(skinned_aabb);
     }
 }
 
@@ -396,17 +396,17 @@ fn aabb_transformed_by(input: Aabb3d, transform: Affine3A) -> Aabb3d {
 }
 
 fn get_skinned_aabb(
-    bounds: &SkinnedBounds,
+    component: &SkinnedAabb,
     joints: &Query<&GlobalTransform>,
-    assets: &Res<Assets<SkinnedBoundsAsset>>,
+    assets: &Res<Assets<SkinnedAabbAsset>>,
     skinned_mesh: &SkinnedMesh,
     world_from_entity: &Affine3A,
 ) -> Option<Aabb> {
-    let asset = assets.get(bounds.asset.as_ref()?)?;
+    let asset = assets.get(component.asset.as_ref()?)?;
 
-    let num_bounds = asset.num_bounds();
+    let num_aabbs = asset.num_aabbs();
 
-    if num_bounds == 0 {
+    if num_aabbs == 0 {
         return None;
     }
 
@@ -417,10 +417,10 @@ fn get_skinned_aabb(
         max: Vec3A::MIN,
     };
 
-    for bound_index in 0..num_bounds {
-        if let Some(world_from_joint) = asset.world_from_joint(bound_index, skinned_mesh, joints) {
+    for aabb_index in 0..num_aabbs {
+        if let Some(world_from_joint) = asset.world_from_joint(aabb_index, skinned_mesh, joints) {
             let entity_from_joint = entity_from_world * world_from_joint;
-            let joint_aabb = aabb_transformed_by(asset.aabb(bound_index), entity_from_joint);
+            let joint_aabb = aabb_transformed_by(asset.aabb(aabb_index), entity_from_joint);
 
             entity_aabb = entity_aabb.merge(&joint_aabb);
         }
@@ -438,22 +438,22 @@ fn get_skinned_aabb(
     }
 }
 
-fn update_skinned_bounds(
-    mut query: Query<(&mut Aabb, &SkinnedBounds, &SkinnedMesh, &GlobalTransform)>,
+fn update_skinned_aabbs(
+    mut query: Query<(&mut Aabb, &SkinnedAabb, &SkinnedMesh, &GlobalTransform)>,
     joints: Query<&GlobalTransform>,
-    assets: Res<Assets<SkinnedBoundsAsset>>,
+    assets: Res<Assets<SkinnedAabbAsset>>,
 ) {
-    query
-        .par_iter_mut()
-        .for_each(|(mut entity_aabb, bounds, skinned_mesh, world_from_mesh)| {
-            if let Some(skinned_aabb) = get_skinned_aabb(
-                bounds,
+    query.par_iter_mut().for_each(
+        |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_mesh)| {
+            if let Some(new_entity_aabb) = get_skinned_aabb(
+                skinned_aabb,
                 &joints,
                 &assets,
                 skinned_mesh,
                 &world_from_mesh.affine(),
             ) {
-                *entity_aabb = skinned_aabb
+                *entity_aabb = new_entity_aabb
             }
-        })
+        },
+    )
 }

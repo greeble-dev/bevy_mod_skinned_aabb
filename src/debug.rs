@@ -8,75 +8,75 @@ use bevy_reflect::Reflect;
 use bevy_render::{mesh::skinning::SkinnedMesh, primitives::Aabb};
 use bevy_transform::{components::GlobalTransform, TransformSystem};
 
-use crate::{SkinnedBounds, SkinnedBoundsAsset};
+use crate::{SkinnedAabb, SkinnedAabbAsset};
 
 pub mod prelude {
     pub use crate::debug::{
-        toggle_draw_entity_bounds, toggle_draw_joint_bounds, SkinnedBoundsDebugPlugin,
+        toggle_draw_entity_aabbs, toggle_draw_joint_aabbs, SkinnedAabbDebugPlugin,
     };
 }
 
 #[derive(Default)]
-pub struct SkinnedBoundsDebugPlugin {
+pub struct SkinnedAabbDebugPlugin {
     pub enable_by_default: bool,
 }
 
-impl SkinnedBoundsDebugPlugin {
+impl SkinnedAabbDebugPlugin {
     pub fn new(enable_by_default: bool) -> Self {
-        SkinnedBoundsDebugPlugin { enable_by_default }
+        SkinnedAabbDebugPlugin { enable_by_default }
     }
 
     pub fn enable_by_default() -> Self {
-        SkinnedBoundsDebugPlugin {
+        SkinnedAabbDebugPlugin {
             enable_by_default: true,
         }
     }
 
     pub fn disable_by_default() -> Self {
-        SkinnedBoundsDebugPlugin {
+        SkinnedAabbDebugPlugin {
             enable_by_default: false,
         }
     }
 }
 
 #[derive(Default, Resource)]
-pub struct SkinnedBoundsDebugConfig {
-    // If true, draw the bounds of all skinned mesh joints.
+pub struct SkinnedAabbDebugConfig {
+    // If true, draw the aabbs of all skinned mesh joints.
     pub draw_joints: bool,
 
-    // If true, draw the bounds of all entities that have skinned bounds.
+    // If true, draw the aabbs of all entities that have a skinned aabb.
     pub draw_entities: bool,
 }
 
-impl Plugin for SkinnedBoundsDebugPlugin {
+impl Plugin for SkinnedAabbDebugPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(SkinnedBoundsDebugConfig {
+        app.insert_resource(SkinnedAabbDebugConfig {
             draw_joints: self.enable_by_default,
             draw_entities: self.enable_by_default,
         })
-        .init_gizmo_group::<SkinnedBoundsGizmos>()
+        .init_gizmo_group::<SkinnedAabbGizmos>()
         .add_systems(
             PostUpdate,
             (
-                draw_joint_bounds
+                draw_joint_aabbs
                     .after(TransformSystem::TransformPropagate)
-                    .run_if(|config: Res<SkinnedBoundsDebugConfig>| config.draw_joints),
-                draw_entity_bounds
+                    .run_if(|config: Res<SkinnedAabbDebugConfig>| config.draw_joints),
+                draw_entity_aabbs
                     .after(TransformSystem::TransformPropagate)
-                    .run_if(|config: Res<SkinnedBoundsDebugConfig>| config.draw_entities),
+                    .run_if(|config: Res<SkinnedAabbDebugConfig>| config.draw_entities),
             ),
         );
     }
 }
 
 #[derive(Default, Reflect, GizmoConfigGroup)]
-struct SkinnedBoundsGizmos {}
+struct SkinnedAabbGizmos {}
 
-pub fn toggle_draw_joint_bounds(mut debug: ResMut<SkinnedBoundsDebugConfig>) {
+pub fn toggle_draw_joint_aabbs(mut debug: ResMut<SkinnedAabbDebugConfig>) {
     debug.draw_joints ^= true;
 }
 
-pub fn toggle_draw_entity_bounds(mut debug: ResMut<SkinnedBoundsDebugConfig>) {
+pub fn toggle_draw_entity_aabbs(mut debug: ResMut<SkinnedAabbDebugConfig>) {
     debug.draw_entities ^= true;
 }
 
@@ -95,22 +95,22 @@ fn gizmo_transform_from_aabb3d(aabb: Aabb3d) -> Affine3A {
     gizmo_transform_from_aabb(Aabb::from_min_max(aabb.min.into(), aabb.max.into()))
 }
 
-fn draw_joint_bounds(
-    query: Query<(&SkinnedBounds, &SkinnedMesh)>,
+fn draw_joint_aabbs(
+    query: Query<(&SkinnedAabb, &SkinnedMesh)>,
     joints: Query<&GlobalTransform>,
-    mut gizmos: Gizmos<SkinnedBoundsGizmos>,
-    assets: Res<Assets<SkinnedBoundsAsset>>,
+    mut gizmos: Gizmos<SkinnedAabbGizmos>,
+    assets: Res<Assets<SkinnedAabbAsset>>,
 ) {
     // TODO: Nesting a bit too deep? Maybe split into an inner function.
 
-    query.iter().for_each(|(bounds, skinned_mesh)| {
-        if let Some(asset_handle) = &bounds.asset {
+    query.iter().for_each(|(skinned_aabb, skinned_mesh)| {
+        if let Some(asset_handle) = &skinned_aabb.asset {
             if let Some(asset) = assets.get(asset_handle) {
-                for bound_index in 0..asset.num_bounds() {
+                for aabb_index in 0..asset.num_aabbs() {
                     if let Some(world_from_joint) =
-                        asset.world_from_joint(bound_index, skinned_mesh, &joints)
+                        asset.world_from_joint(aabb_index, skinned_mesh, &joints)
                     {
-                        let joint_from_aabb = gizmo_transform_from_aabb3d(asset.aabb(bound_index));
+                        let joint_from_aabb = gizmo_transform_from_aabb3d(asset.aabb(aabb_index));
                         let world_from_aabb = world_from_joint * joint_from_aabb;
 
                         gizmos.cuboid(world_from_aabb, Color::WHITE);
@@ -121,9 +121,9 @@ fn draw_joint_bounds(
     })
 }
 
-fn draw_entity_bounds(
-    query: Query<(Entity, &SkinnedBounds, &Aabb, &GlobalTransform)>,
-    mut gizmos: Gizmos<SkinnedBoundsGizmos>,
+fn draw_entity_aabbs(
+    query: Query<(Entity, &SkinnedAabb, &Aabb, &GlobalTransform)>,
+    mut gizmos: Gizmos<SkinnedAabbGizmos>,
 ) {
     query
         .iter()

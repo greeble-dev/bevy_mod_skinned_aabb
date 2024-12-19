@@ -13,8 +13,8 @@ use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(SkinnedBoundsPlugin)
-        .add_plugins(SkinnedBoundsDebugPlugin::enable_by_default())
+        .add_plugins(SkinnedAabbPlugin)
+        .add_plugins(SkinnedAabbDebugPlugin::enable_by_default())
         .insert_resource(AmbientLight {
             color: Color::WHITE,
             brightness: 2000.0,
@@ -23,8 +23,8 @@ fn main() {
             Update,
             (
                 toggle_pause.run_if(input_just_pressed(KeyCode::Space)),
-                toggle_draw_joint_bounds.run_if(input_just_pressed(KeyCode::KeyJ)),
-                toggle_draw_entity_bounds.run_if(input_just_pressed(KeyCode::KeyE)),
+                toggle_draw_joint_aabbs.run_if(input_just_pressed(KeyCode::KeyJ)),
+                toggle_draw_entity_aabbs.run_if(input_just_pressed(KeyCode::KeyE)),
             ),
         )
         .add_systems(Startup, setup)
