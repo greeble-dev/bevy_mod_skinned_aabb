@@ -26,3 +26,6 @@ bevy = "0.15"
 
 [[example]]
 name = "showcase"
+
+[[example]]
+name = "many_foxes"
