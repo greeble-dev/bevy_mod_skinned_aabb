@@ -6,7 +6,6 @@ use std::f32::consts::PI;
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     input::common_conditions::input_just_pressed,
-    pbr::CascadeShadowConfigBuilder,
     prelude::*,
     window::{PresentMode, WindowResolution},
     winit::{UpdateMode, WinitSettings},
@@ -55,6 +54,10 @@ fn main() {
             speed: 2.0,
             moving: true,
             sync: false,
+        })
+        .insert_resource(AmbientLight {
+            color: Color::WHITE,
+            brightness: 2000.0,
         })
         .add_systems(Startup, setup)
         .add_systems(Update, (setup_scene_once_loaded, update_fox_rings))
@@ -204,15 +207,9 @@ fn setup(
     commands.spawn((
         Transform::from_rotation(Quat::from_euler(EulerRot::ZYX, 0.0, 1.0, -PI / 4.)),
         DirectionalLight {
-            shadows_enabled: true,
+            shadows_enabled: false,
             ..default()
         },
-        CascadeShadowConfigBuilder {
-            first_cascade_far_bound: 0.9 * radius,
-            maximum_distance: 2.8 * radius,
-            ..default()
-        }
-        .build(),
     ));
 }
 
