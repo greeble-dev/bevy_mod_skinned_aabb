@@ -42,6 +42,8 @@ fn main() {
             }),
             FrameTimeDiagnosticsPlugin,
             LogDiagnosticsPlugin::default(),
+        ))
+        .add_plugins((
             SkinnedAabbPlugin,
             SkinnedAabbDebugPlugin::disable_by_default(),
         ))
