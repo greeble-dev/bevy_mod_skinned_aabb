@@ -16,6 +16,8 @@ bevy_mod_skinned_aabb = { git = "https://github.com/greeble-dev/bevy_mod_skinned
 ```
 
 ```rust
+// main.rs
+
 use bevy_mod_skinned_aabb::prelude::*;
 
 fn main() {
