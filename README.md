@@ -8,6 +8,13 @@ https://github.com/user-attachments/assets/73d236da-43a8-4b63-a19e-f3625d374077
 
 ## Quick Start
 
+```toml
+# Cargo.toml
+
+[dependencies]
+bevy_mod_skinned_aabb = { git = "https://github.com/greeble-dev/bevy_mod_skinned_aabb.git" }
+```
+
 ```rust
 use bevy_mod_skinned_aabb::prelude::*;
 
@@ -21,7 +28,7 @@ fn main() {
 
 The plugin will automatically detect and update any skinned meshes that are added to the world, including GLTF imported meshes.
 
-You can also add debug rendering:
+### Add Debug Rendering
 
 ```rust
 use bevy_mod_skinned_aabb::prelude::*;
@@ -44,7 +51,7 @@ fn main() {
 }
 ```
 
- Toggle joint AABBs by pressing "J", and mesh AABBs by pressing "M".
+Toggle joint AABBs by pressing "J", and mesh AABBs by pressing "M".
 
 ## Try The Examples
 
