@@ -10,10 +10,10 @@ A [Bevy](https://github.com/bevyengine/bevy) plugin that calculates AABBs for sk
 use bevy_mod_skinned_aabb::prelude::*;
 
 fn main() {
-	App::new()
-		.add_plugins(DefaultPlugins)
-		.add_plugins(SkinnedAabbPlugin)
-		.run();
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugins(SkinnedAabbPlugin)
+        .run();
 }
 ```
 
@@ -25,18 +25,17 @@ You can also add debug rendering:
 use bevy_mod_skinned_aabb::prelude::*;
 
 fn main() {
-	App::new()
-		.add_plugins(DefaultPlugins)
-		.add_plugins((SkinnedAabbPlugin, SkinnedAabbDebugPlugin::disable_by_default())
-		.add_systems(
-			Update,
-			(
-				toggle_draw_joint_aabbs.run_if(input_just_pressed(KeyCode::KeyJ)),
-				toggle_draw_mesh_aabbs.run_if(input_just_pressed(KeyCode::KeyM)),
-			)
-		)
-        .run();
-		
+    App::new()
+        .add_plugins(DefaultPlugins)
+        .add_plugins((SkinnedAabbPlugin, SkinnedAabbDebugPlugin::disable_by_default())
+        .add_systems(
+            Update,
+            (
+                toggle_draw_joint_aabbs.run_if(input_just_pressed(KeyCode::KeyJ)),
+                toggle_draw_mesh_aabbs.run_if(input_just_pressed(KeyCode::KeyM)),
+            )
+        )
+        .run();	
 }
 ```
 
