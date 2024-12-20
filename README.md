@@ -70,3 +70,11 @@ cargo run --example=many_foxes
 - After spawning meshes, there might be a one frame gap before the correct AABBs are calculated.
 - The plugin requires that the main thread can access mesh vertices.
 	- This appears to be the default right now, but I'm unsure of the exact conditions.
+
+## Bevy Compatibility
+
+TODO!
+
+| bevy | bevy_mod_skinned_aabb |
+|------|-----------------------|
+| 0.15 | main                  |
