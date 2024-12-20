@@ -1,6 +1,8 @@
 use bevy_app::{App, Plugin, PostUpdate, Update};
 use bevy_asset::{Asset, AssetApp, AssetId, Assets, Handle};
 use bevy_ecs::prelude::*;
+#[cfg(feature = "trace")]
+use bevy_log::info_span;
 use bevy_math::{
     bounding::{Aabb3d, BoundingVolume},
     Affine3A, Vec3, Vec3A,
@@ -295,6 +297,18 @@ fn create_skinned_aabb_component(
         mesh_assets.get(mesh_handle),
         inverse_bindposes_assets.get(inverse_bindposes_handle),
     ) {
+        // TODO: Improve Handle -> String messiness?
+        #[cfg(feature = "trace")]
+        let _span = info_span!(
+            "bevy_mod_skinned_aabb::create_skinned_aabb_asset",
+            asset = mesh_handle
+                .path()
+                .map(|p| p.path().to_str())
+                .flatten()
+                .unwrap_or("")
+        )
+        .entered();
+
         let asset = create_skinned_aabb_asset(
             mesh,
             mesh_handle.id(),

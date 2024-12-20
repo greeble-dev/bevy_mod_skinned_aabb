@@ -9,20 +9,28 @@ repository = "https://github.com/greeble-dev/bevy_mod_skinned_aabb"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-bevy_math = { version = "0.15", default-features = false }
-bevy_mesh = { version = "0.15", default-features = false }
-bevy_derive = { version = "0.15", default-features = false }
-bevy_ecs = { version = "0.15", default-features = false }
-bevy_render = { version = "0.15", default-features = false }
 bevy_app = { version = "0.15", default-features = false }
 bevy_asset = { version = "0.15", default-features = false }
-bevy_transform = { version = "0.15", default-features = false }
-bevy_gizmos = { version = "0.15", default-features = false }
 bevy_color = { version = "0.15", default-features = false }
+bevy_derive = { version = "0.15", default-features = false }
+bevy_ecs = { version = "0.15", default-features = false }
+bevy_gizmos = { version = "0.15", default-features = false }
+bevy_log = { version = "0.15", default-features = false }
+bevy_math = { version = "0.15", default-features = false }
+bevy_mesh = { version = "0.15", default-features = false }
 bevy_reflect = { version = "0.15", default-features = false }
+bevy_render = { version = "0.15", default-features = false }
+bevy_transform = { version = "0.15", default-features = false }
 
 [dev-dependencies]
 bevy = "0.15"
+
+[features]
+# TODO: Not sure if this is correct? The goal is to enable an info_trace! macro
+# when feature "bevy/trace" is enabled. But I can't to do that directly in the
+# code with #[cfg(feature = "bevy/trace")], so we have to have a separate feature
+# and specify both?
+trace = []
 
 [[example]]
 name = "showcase"
