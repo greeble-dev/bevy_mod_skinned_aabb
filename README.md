@@ -2,7 +2,9 @@
 
 ***UNDER CONSTRUCTION - USE AT YOUR OWN RISK***
 
-A [Bevy](https://github.com/bevyengine/bevy) plugin that calculates AABBs for skinned meshes. This mostly solves the problem of skinned meshes disappearing at certain angles.
+A [Bevy](https://github.com/bevyengine/bevy) plugin that automatically calculates AABBs for skinned meshes. This mostly solves the problem of skinned meshes disappearing at certain angles.
+
+https://github.com/user-attachments/assets/73d236da-43a8-4b63-a19e-f3625d374077
 
 ## Quick Start
 
@@ -27,13 +29,16 @@ use bevy_mod_skinned_aabb::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins((SkinnedAabbPlugin, SkinnedAabbDebugPlugin::disable_by_default())
+        .add_plugins((
+            SkinnedAabbPlugin,
+            SkinnedAabbDebugPlugin::disable_by_default(),
+        ))
         .add_systems(
             Update,
             (
                 toggle_draw_joint_aabbs.run_if(input_just_pressed(KeyCode::KeyJ)),
                 toggle_draw_mesh_aabbs.run_if(input_just_pressed(KeyCode::KeyM)),
-            )
+            ),
         )
         .run();	
 }
