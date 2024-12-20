@@ -12,7 +12,7 @@ use crate::{SkinnedAabb, SkinnedAabbAsset};
 
 pub mod prelude {
     pub use crate::debug::{
-        toggle_draw_entity_aabbs, toggle_draw_joint_aabbs, SkinnedAabbDebugPlugin,
+        toggle_draw_joint_aabbs, toggle_draw_mesh_aabbs, SkinnedAabbDebugPlugin,
     };
 }
 
@@ -42,17 +42,17 @@ impl SkinnedAabbDebugPlugin {
 #[derive(Default, Resource)]
 pub struct SkinnedAabbDebugConfig {
     // If true, draw the aabbs of all skinned mesh joints.
-    pub draw_joints: bool,
+    pub draw_joint_aabbs: bool,
 
     // If true, draw the aabbs of all entities that have a skinned aabb.
-    pub draw_entities: bool,
+    pub draw_mesh_aabbs: bool,
 }
 
 impl Plugin for SkinnedAabbDebugPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(SkinnedAabbDebugConfig {
-            draw_joints: self.enable_by_default,
-            draw_entities: self.enable_by_default,
+            draw_joint_aabbs: self.enable_by_default,
+            draw_mesh_aabbs: self.enable_by_default,
         })
         .init_gizmo_group::<SkinnedAabbGizmos>()
         .add_systems(
@@ -60,10 +60,10 @@ impl Plugin for SkinnedAabbDebugPlugin {
             (
                 draw_joint_aabbs
                     .after(TransformSystem::TransformPropagate)
-                    .run_if(|config: Res<SkinnedAabbDebugConfig>| config.draw_joints),
-                draw_entity_aabbs
+                    .run_if(|config: Res<SkinnedAabbDebugConfig>| config.draw_joint_aabbs),
+                draw_mesh_aabbs
                     .after(TransformSystem::TransformPropagate)
-                    .run_if(|config: Res<SkinnedAabbDebugConfig>| config.draw_entities),
+                    .run_if(|config: Res<SkinnedAabbDebugConfig>| config.draw_mesh_aabbs),
             ),
         );
     }
@@ -73,11 +73,11 @@ impl Plugin for SkinnedAabbDebugPlugin {
 struct SkinnedAabbGizmos {}
 
 pub fn toggle_draw_joint_aabbs(mut debug: ResMut<SkinnedAabbDebugConfig>) {
-    debug.draw_joints ^= true;
+    debug.draw_joint_aabbs ^= true;
 }
 
-pub fn toggle_draw_entity_aabbs(mut debug: ResMut<SkinnedAabbDebugConfig>) {
-    debug.draw_entities ^= true;
+pub fn toggle_draw_mesh_aabbs(mut debug: ResMut<SkinnedAabbDebugConfig>) {
+    debug.draw_mesh_aabbs ^= true;
 }
 
 fn gizmo_transform_from_aabb(aabb: Aabb) -> Affine3A {
@@ -121,7 +121,7 @@ fn draw_joint_aabbs(
     })
 }
 
-fn draw_entity_aabbs(
+fn draw_mesh_aabbs(
     query: Query<(Entity, &SkinnedAabb, &Aabb, &GlobalTransform)>,
     mut gizmos: Gizmos<SkinnedAabbGizmos>,
 ) {

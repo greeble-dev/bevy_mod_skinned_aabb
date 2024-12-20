@@ -24,7 +24,7 @@ fn main() {
             (
                 toggle_pause.run_if(input_just_pressed(KeyCode::Space)),
                 toggle_draw_joint_aabbs.run_if(input_just_pressed(KeyCode::KeyJ)),
-                toggle_draw_entity_aabbs.run_if(input_just_pressed(KeyCode::KeyE)),
+                toggle_draw_mesh_aabbs.run_if(input_just_pressed(KeyCode::KeyM)),
             ),
         )
         .add_systems(Startup, setup)
