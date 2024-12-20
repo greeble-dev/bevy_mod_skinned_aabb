@@ -1,6 +1,6 @@
 # Runs a Tracy capture on an example and then starts the Tracy UI.
 #
-# Usage: tracey.ps1 <example> <optional_postfix>
+# Usage: tracy.ps1 <example> <optional_postfix>
 #
 # The file is saved to target/<example>_<optional_postfix>.tracy.
 # 
