@@ -2,7 +2,7 @@
 
 ***UNDER CONSTRUCTION - USE AT YOUR OWN RISK***
 
-A [Bevy](https://github.com/bevyengine/bevy) plugin that automatically calculates AABBs for skinned meshes. This mostly solves the problem of skinned meshes disappearing at certain angles.
+A [Bevy](https://github.com/bevyengine/bevy) plugin that automatically calculates AABBs for skinned meshes.
 
 https://github.com/user-attachments/assets/73d236da-43a8-4b63-a19e-f3625d374077
 
@@ -30,7 +30,7 @@ fn main() {
 
 The plugin will automatically detect and update any skinned meshes that are added to the world, including GLTF imported meshes.
 
-### Add Debug Rendering
+## Optionally Add Debug Rendering
 
 ```rust
 use bevy_mod_skinned_aabb::prelude::*;
@@ -61,7 +61,7 @@ Toggle joint AABBs by pressing "J", and mesh AABBs by pressing "M".
 git clone https://github.com/greeble-dev/bevy_mod_skinned_aabb
 cd bevy_mod_skinned_aabb
 
-# Functionality test of various GLTF and procedural meshes.
+# Functionality test of GLTF and procedural meshes.
 cargo run --example=showcase
 
 # Stress test of 1000 skinned meshes.
@@ -72,7 +72,7 @@ cargo run --example=many_foxes
 ## Limitations
 
 - Creating and updating the AABBs increases the CPU cost of skinned meshes by roughly 4%. 
-	- Benchmarking notes in [notes/Benchmarks.md](notes/Benchmarks.md).
+	- Raw notes in [notes/Benchmarks.md](notes/Benchmarks.md).
 - The skinned AABBs do **not** account for blend shapes and vertex shader deformations.
 	- These meshes may still have visibility issues.
 	- Meshes that only use skinning are safe.
