@@ -25,7 +25,7 @@ bevy_transform = { version = "0.15", default-features = false }
 [dev-dependencies]
 bevy = "0.15"
 
-# Alternative dependencies for testing changes to bevy crates.
+# Alternative dependencies for testing local changes to bevy crates.
 #
 # [dependencies]
 # bevy_app = { version = "0.15", default-features = false, path = "../bevy/crates/bevy_app" }
