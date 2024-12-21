@@ -31,13 +31,15 @@ AdapterInfo { name: "NVIDIA GeForce GT 1030", vendor: 4318, device: 7425, device
 		- Skinned AABBs disabled = 1.61ms
 		- Skinned AABBs enabled = 1.67ms (x1.037)
 	- `system{name="bevy_mod_skinned_aabb::update_skinned_aabbs"}` 
-    	- 49.25us
-		- 2.24ns per skinned joint
-		- `par_iter` time
+    	- Main function
+        	- 49.25us
+        	- 2.24ns per skinned joint.
+		- `par_iter` 
     		- 175.55us (across all threads)
 			- 8ns per skinned joint.
     		- Runs on 8 threads, but only 45% occupancy.
             - Memory bandwidth = 2 + 8 + 64 + 24 = 98 bytes in 8ns = 12.25GB/s per core.
+        - Core loop over AABBs is 107 instructions, not including one call to QueryData::get_unchecked_manual (~50 instructions)
 	- `system{name="bevy_mod_skinned_aabb::create_skinned_aabbs"}`
         - 600ns when no new meshes are found.
 - Conclusions
