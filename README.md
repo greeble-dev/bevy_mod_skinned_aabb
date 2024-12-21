@@ -71,7 +71,7 @@ cargo run --example=many_foxes
 
 ## Limitations
 
-- Enabling skinned AABBs increases the CPU cost of skinned meshes by roughly 4%. 
+- Enabling skinned AABBs increases the main thread CPU cost of skinned meshes by roughly 4%. 
 	- Raw notes in [notes/Performance.md](notes/Performance.md).
 - The skinned AABBs do **not** account for blend shapes and vertex shader deformations.
 	- These meshes may still have visibility issues.

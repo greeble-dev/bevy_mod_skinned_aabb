@@ -25,8 +25,9 @@ AdapterInfo { name: "NVIDIA GeForce GT 1030", vendor: 4318, device: 7425, device
 		- Part of time spent making components/assets for all mesh instances.
 - Updates
 	- `schedule{name=PostUpdate}`
-		- This span seems like a reasonable proxy for "engine time updating animated meshes".
-			- Includes animation, transform/visibility propagation, skinned AABB update.
+		- This span seems like a reasonable proxy for "main thread animated mesh time".
+			- Includes animation, transform/visibility propagation, skinned AABBs.
+			- Excludes render extraction and processing.
 		- Skinned AABBs disabled = 1.61ms
 		- Skinned AABBs enabled = 1.67ms (x1.037)
 	- `system{name="bevy_mod_skinned_aabb::update_skinned_aabbs"}` 
@@ -42,7 +43,7 @@ AdapterInfo { name: "NVIDIA GeForce GT 1030", vendor: 4318, device: 7425, device
         - Actually calculating the bounds is a tiny percentage of GLTF load.
         - Creating the components is not great, but in long-term that gets merged into asset pipeline and existing skinned mesh component?
     - Update is ok-ish.
-        - ~4% increase in overall time spent on animated meshes.
+        - ~4% increase in overall time spent on animated meshes on main thread.
         - Not great, not terrible.
         - Will look better on things doing more animation blending - many_foxes is just sampling a single animation.
         - Might look worse if animation and transform propagation get further optimisations.
