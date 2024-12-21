@@ -1,3 +1,5 @@
+asdf
+
 // Based on bevy/examples/stress_tests/many_foxes.rs. Removes a bunch of options to keep
 // things simple. Adds skinned aabb debug rendering - press J for joints and M for meshes.
 
