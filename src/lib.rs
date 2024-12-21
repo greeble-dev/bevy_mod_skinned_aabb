@@ -1,3 +1,5 @@
+// TODO: Documentation.
+
 use bevy_app::{App, Plugin, PostUpdate, Update};
 use bevy_asset::{Asset, AssetApp, AssetId, Assets, Handle};
 use bevy_ecs::prelude::*;

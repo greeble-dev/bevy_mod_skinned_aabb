@@ -1,5 +1,5 @@
-//! Based on bevy/examples/stress_tests/many_foxes.rs. Removes a bunch of options to keep
-//! things simple. Adds skinned aabb debug rendering - press J for joints and M for meshes.
+// Based on bevy/examples/stress_tests/many_foxes.rs. Removes a bunch of options to keep
+// things simple. Adds skinned aabb debug rendering - press J for joints and M for meshes.
 
 use std::f32::consts::PI;
 
@@ -32,7 +32,8 @@ fn main() {
         .add_plugins((
             DefaultPlugins.set(WindowPlugin {
                 primary_window: Some(Window {
-                    title: "🦊🦊🦊 Many Foxes! 🦊🦊🦊".into(),
+                    title: "🦊🦊🦊 Many Foxes! 🦊🦊🦊 Press J or M to toggle debug rendering"
+                        .into(),
                     present_mode: PresentMode::AutoNoVsync,
                     resolution: WindowResolution::new(1920.0, 1080.0)
                         .with_scale_factor_override(1.0),

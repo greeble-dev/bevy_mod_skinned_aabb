@@ -12,7 +12,13 @@ use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "Skinned AABB Showcase: Press J or M to toggle debug rendering".into(),
+                ..default()
+            }),
+            ..default()
+        }))
         .add_plugins(SkinnedAabbPlugin)
         .add_plugins(SkinnedAabbDebugPlugin::enable_by_default())
         .insert_resource(AmbientLight {
