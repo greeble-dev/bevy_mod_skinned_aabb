@@ -1,5 +1,3 @@
-Miscellaneous benchmarking notes.
-
 # System Info
 
 ```
