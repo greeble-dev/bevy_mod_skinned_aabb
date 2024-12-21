@@ -192,10 +192,15 @@ impl Iterator for InfluenceIterator<'_> {
     type Item = Influence;
 
     fn next(&mut self) -> Option<Influence> {
+        // TODO: Bit janky hard-coding this here. Could petition for it to be
+        // added to bevy_pbr alongside MAX_JOINTS?
+        const MAX_INFLUENCES: usize = 4;
+
         loop {
-            // TODO: Bit janky hard-coding the 3 here. Will need refactoring anyway once Bevy
-            // supports > 4 influences.
-            if self.influence_index > 3 {
+            assert!(self.influence_index <= MAX_INFLUENCES);
+            assert!(self.vertex_index <= self.positions.len());
+
+            if self.influence_index >= MAX_INFLUENCES {
                 self.influence_index = 0;
                 self.vertex_index += 1;
             }
