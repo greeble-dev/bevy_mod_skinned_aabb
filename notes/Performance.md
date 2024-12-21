@@ -36,8 +36,10 @@ AdapterInfo { name: "NVIDIA GeForce GT 1030", vendor: 4318, device: 7425, device
 		- `par_iter` time
     		- 175.55us (across all threads)
 			- 8ns per skinned joint.
-    		- Runs on 8 cores, but only effectively utilises ~3.5.
+    		- Runs on 8 threads, but only 45% occupancy.
             - Memory bandwidth = 2 + 8 + 64 + 24 = 98 bytes in 8ns = 12.25GB/s per core.
+	- `system{name="bevy_mod_skinned_aabb::create_skinned_aabbs"}`
+        - 600ns when no new meshes are found.
 - Conclusions
     - Creation seems reasonable.
         - Actually calculating the bounds is a tiny percentage of GLTF load.
