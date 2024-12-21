@@ -313,8 +313,7 @@ fn create_skinned_aabb_component(
             "bevy_mod_skinned_aabb::create_skinned_aabb_asset",
             asset = mesh_handle
                 .path()
-                .map(|p| p.path().to_str())
-                .flatten()
+                .and_then(|p| p.path().to_str())
                 .unwrap_or("")
         )
         .entered();
