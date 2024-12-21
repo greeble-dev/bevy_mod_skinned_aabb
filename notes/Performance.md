@@ -42,9 +42,9 @@ AdapterInfo { name: "NVIDIA GeForce GT 1030", vendor: 4318, device: 7425, device
         - Actually calculating the bounds is a tiny percentage of GLTF load.
         - Creating the components is not great, but in long-term that gets merged into asset pipeline and existing skinned mesh component?
     - Update is ok-ish.
-        - ~4% increase in overall time spent on animated meshes, where all meshes playing a single animation.
+        - ~4% increase in overall time spent on animated meshes.
         - Not great, not terrible.
-        - Will look better on things doing more animation work.
+        - Will look better on things doing more animation blending - many_foxes is just sampling a single animation.
         - Might look worse if animation and transform propagation get further optimisations.
         - Main issue is that it's an independent system.
             - Not making good use of cores and L1/2.

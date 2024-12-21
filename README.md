@@ -71,14 +71,14 @@ cargo run --example=many_foxes
 
 ## Limitations
 
-- Creating and updating the AABBs increases the CPU cost of skinned meshes by roughly 4%. 
+- Enabling skinned AABBs increases the CPU cost of skinned meshes by roughly 4%. 
 	- Raw notes in [notes/Performance.md](notes/Performance.md).
 - The skinned AABBs do **not** account for blend shapes and vertex shader deformations.
 	- These meshes may still have visibility issues.
 	- Meshes that only use skinning are safe.
 - The plugin requires that the main thread can access mesh vertices.
-	- This appears to be the default right now, but I'm unsure of the exact conditions.
-	- TODO?
+	- This appears to work fine by default, but might fail if asset settings are changed.
+	- See https://github.com/bevyengine/bevy/blob/main/crates/bevy_asset/src/render_asset.rs.
 - After spawning meshes, there might be a one frame gap before the correct AABBs are calculated.
 - If a mesh asset changes after being created/loaded then the skinned AABBs will not reflect the changes.
     - TODO: How to address this? Note that Bevy has the same problem with regular AABBs (https://github.com/bevyengine/bevy/issues/4294).
