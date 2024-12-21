@@ -44,6 +44,10 @@ bevy = "0.15"
 # [dev-dependencies]
 # bevy = { version = "0.15", path = "../bevy" }
 
+[profile.release-with-debug]
+inherits = "release"
+debug = true
+
 [features]
 # TODO: Not sure if this is correct? The goal is to enable an info_trace! macro
 # when feature "bevy/trace" is enabled. But I can't to do that directly in the
