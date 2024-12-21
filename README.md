@@ -2,7 +2,7 @@
 
 ***UNDER CONSTRUCTION - USE AT YOUR OWN RISK***
 
-A [Bevy](https://github.com/bevyengine/bevy) plugin that automatically calculates AABBs for skinned meshes.
+A [Bevy](https://github.com/bevyengine/bevy) plugin that automatically calculates AABBs for skinned meshes. This mostly fixes a common issue with skinned meshes disappearing (https://github.com/bevyengine/bevy/issues/4971).
 
 https://github.com/user-attachments/assets/73d236da-43a8-4b63-a19e-f3625d374077
 
@@ -72,13 +72,16 @@ cargo run --example=many_foxes
 ## Limitations
 
 - Creating and updating the AABBs increases the CPU cost of skinned meshes by roughly 4%. 
-	- Raw notes in [notes/Benchmarks.md](notes/Benchmarks.md).
+	- Raw notes in [notes/Performance.md](notes/Performance.md).
 - The skinned AABBs do **not** account for blend shapes and vertex shader deformations.
 	- These meshes may still have visibility issues.
 	- Meshes that only use skinning are safe.
-- After spawning meshes, there might be a one frame gap before the correct AABBs are calculated.
 - The plugin requires that the main thread can access mesh vertices.
 	- This appears to be the default right now, but I'm unsure of the exact conditions.
+	- TODO?
+- After spawning meshes, there might be a one frame gap before the correct AABBs are calculated.
+- If a mesh asset changes after being created/loaded then the skinned AABBs will not reflect the changes.
+    - TODO: How to address this? Note that Bevy has the same problem with regular AABBs (https://github.com/bevyengine/bevy/issues/4294).
 
 ## Bevy Compatibility
 
