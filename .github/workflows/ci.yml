@@ -10,6 +10,12 @@ env:
     CARGO_TERM_COLOR: always
 
 jobs:
+    steps:
+      - name: Update Packages
+        run: sudo apt-get update -yq
+      - name: Install dependencies
+        run: sudo apt-get install -yq --no-install-recommends libudev-dev libasound2-dev libxcb-composite0-dev
+
     check:
         name: Check
         runs-on: ubuntu-latest
