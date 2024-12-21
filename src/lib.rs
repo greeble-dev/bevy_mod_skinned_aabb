@@ -74,11 +74,11 @@ impl From<Aabb3d> for PackedAabb3d {
 #[derive(Asset, Debug, TypePath)]
 pub struct SkinnedAabbAsset {
     // The source mesh and inverse bindpose assets. We keep these so that entities can
-    // reuse existing SkinnedAabbAssets.
+    // reuse existing SkinnedAabbAssets by searching for matching source assets.
     pub mesh: AssetId<Mesh>,
     pub inverse_bindposes: AssetId<SkinnedMeshInverseBindposes>,
 
-    // Aabbs for each skinned joints.
+    // Aabb for each skinned joint.
     pub aabbs: Box<[PackedAabb3d]>,
 
     // Mapping from aabb index to SkinnedMesh::joints index.
@@ -230,7 +230,7 @@ fn create_skinned_aabb_asset(
 
     // Calculate the jointspace aabb for each joint.
 
-    let mut optional_aabbs: Vec<Option<Aabb3d>> = vec![None; num_joints];
+    let mut optional_aabbs: Box<[Option<Aabb3d>]> = vec![None; num_joints].into_boxed_slice();
 
     for Influence {
         position,
@@ -280,6 +280,9 @@ fn create_skinned_aabb_component(
     inverse_bindposes_handle: &Handle<SkinnedMeshInverseBindposes>,
 ) -> SkinnedAabb {
     // First check for an existing asset.
+    //
+    // TODO: Linear search is not great if there's many assets. But in the
+    // long run this should all move to the asset pipeline.
 
     for (existing_asset_id, existing_asset) in skinned_aabb_assets.iter() {
         if (existing_asset.mesh == mesh_handle.id())
@@ -346,11 +349,11 @@ fn create_skinned_aabbs(
     }
 }
 
-/// Scalar version of aabb_transformed_by, kept here for reference.
-///
-/// Algorithm from "Transforming Axis-Aligned Bounding Boxes", James Arvo, Graphics Gems (1990).
-///
-/// TODO: Benchmark against the simd version? Worth a check in case the compiler is cleverer.
+// Scalar version of aabb_transformed_by, kept here for reference.
+//
+// Algorithm from "Transforming Axis-Aligned Bounding Boxes", James Arvo, Graphics Gems (1990).
+//
+// TODO: Benchmark against the simd version? Worth a check in case the compiler is cleverer.
 #[cfg(any())]
 fn aabb_transformed_by_scalar(input: Aabb3d, transform: Affine3A) -> Aabb3d {
     let rs = transform.matrix3.to_cols_array_2d();
@@ -372,6 +375,7 @@ fn aabb_transformed_by_scalar(input: Aabb3d, transform: Affine3A) -> Aabb3d {
     return Aabb3d { min, max };
 }
 
+// Return an AABB that contains the transformed input AABB.
 fn aabb_transformed_by(input: Aabb3d, transform: Affine3A) -> Aabb3d {
     let rs = transform.matrix3;
     let t = transform.translation;
