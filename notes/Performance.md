@@ -52,3 +52,4 @@ AdapterInfo { name: "NVIDIA GeForce GT 1030", vendor: 4318, device: 7425, device
         - Main issue is that it's an independent system.
             - Not making good use of cores and L1/2.
             - Doesn't exploit temporal locality of joint transforms across the various systems (animation blend -> transform propagate -> skinned aabb -> write gpu buffers)
+        - Also didn't check if each mesh instance's joints are contiguous in memory.

@@ -85,8 +85,6 @@ cargo run --example=many_foxes
 
 ## Bevy Compatibility
 
-TODO!
+The main branch is compatible with Bevy 0.15.
 
-| bevy | bevy_mod_skinned_aabb |
-|------|-----------------------|
-| 0.15 | main                  |
+TODO: Proper version tags, compatibility matrix.
