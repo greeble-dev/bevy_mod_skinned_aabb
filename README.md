@@ -8,16 +8,16 @@ https://github.com/user-attachments/assets/73d236da-43a8-4b63-a19e-f3625d374077
 
 ## Quick Start
 
-```toml
-# Cargo.toml
+To enable skinned AABBs in your Bevy app, first update your `Cargo.toml` dependencies:
 
+```toml
 [dependencies]
 bevy_mod_skinned_aabb = { git = "https://github.com/greeble-dev/bevy_mod_skinned_aabb.git" }
 ```
 
-```rust
-// main.rs
+Then add the plugin to your app:
 
+```rust
 use bevy_mod_skinned_aabb::prelude::*;
 
 fn main() {
@@ -28,9 +28,11 @@ fn main() {
 }
 ```
 
-The plugin will automatically detect and update any skinned meshes that are added to the world, including GLTF imported meshes.
+The plugin will automatically detect and update any skinned meshes that are added to the world.
 
-## Optionally Add Debug Rendering
+## Debug Rendering
+
+To see mesh and joint AABBs, use `SkinnedAabbDebugPlugin`:
 
 ```rust
 use bevy_mod_skinned_aabb::prelude::*;
@@ -40,20 +42,18 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins((
             SkinnedAabbPlugin,
-            SkinnedAabbDebugPlugin::disable_by_default(),
+            SkinnedAabbDebugPlugin::disable_by_default(), // Add the debug rendering plugin.
         ))
         .add_systems(
             Update,
             (
-                toggle_draw_joint_aabbs.run_if(input_just_pressed(KeyCode::KeyJ)),
-                toggle_draw_mesh_aabbs.run_if(input_just_pressed(KeyCode::KeyM)),
+                toggle_draw_joint_aabbs.run_if(input_just_pressed(KeyCode::KeyJ)), // Press J to toggle joint AABBs.
+                toggle_draw_mesh_aabbs.run_if(input_just_pressed(KeyCode::KeyM)), // Press M to toggle mesh AABBs.
             ),
         )
         .run();	
 }
 ```
-
-Toggle joint AABBs by pressing "J", and mesh AABBs by pressing "M".
 
 ## Try The Examples
 
@@ -68,20 +68,23 @@ cargo run --example=showcase
 cargo run --example=many_foxes
 ```
 
-
 ## Limitations
 
 - Enabling skinned AABBs increases the main thread CPU cost of skinned meshes by roughly 4%. 
-	- Raw notes in [notes/Performance.md](notes/Performance.md).
-- The skinned AABBs do **not** account for blend shapes and vertex shader deformations.
-	- These meshes may still have visibility issues.
-	- Meshes that only use skinning are safe.
+    - Raw notes in [notes/Performance.md](notes/Performance.md).
+- Skinned AABBs do **not** account for blend shapes and vertex shader deformations.
+    - Meshes that use these features may have incorrect AABBs.
+    - Meshes that only use skinning are safe.
+- Skinned AABBs are conservative but not accurate.
+    - They're conservative in that the AABB is guaranteed to contain the mesh's vertices.
+    - But they're not accurate, in that the AABB may be larger than is necessary.
 - The plugin requires that the main thread can access mesh vertices.
-	- This appears to work fine by default, but might fail if asset settings are changed.
-	- See https://github.com/bevyengine/bevy/blob/main/crates/bevy_asset/src/render_asset.rs.
-- After spawning meshes, there might be a one frame gap before the correct AABBs are calculated.
+    - This appears to work fine by default, but might fail if asset settings are changed.
+    - See https://github.com/bevyengine/bevy/blob/main/crates/bevy_asset/src/render_asset.rs.
+- After spawning meshes, the AABBs might be wrong for one frame.
 - If a mesh asset changes after being created/loaded then the skinned AABBs will not reflect the changes.
-    - TODO: How to address this? Note that Bevy has the same problem with regular AABBs (https://github.com/bevyengine/bevy/issues/4294).
+    - Deleting the SkinnedAabb component from the mesh's entity may fix this (untested).
+    - TODO: How to address this properly? Note that Bevy has the same problem with regular AABBs (https://github.com/bevyengine/bevy/issues/4294).
 
 ## Bevy Compatibility
 
