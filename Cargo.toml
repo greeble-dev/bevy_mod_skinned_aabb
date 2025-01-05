@@ -31,21 +31,21 @@ rand_core = "0.6"
 # Alternative dependencies for testing local changes to bevy crates.
 #
 # [dependencies]
-# bevy_app = { version = "0.15", default-features = false, path = "../bevy/crates/bevy_app" }
-# bevy_asset = { version = "0.15", default-features = false, path = "../bevy/crates/bevy_asset" }
-# bevy_color = { version = "0.15", default-features = false, path = "../bevy/crates/bevy_color" }
-# bevy_derive = { version = "0.15", default-features = false, path = "../bevy/crates/bevy_derive" }
-# bevy_ecs = { version = "0.15", default-features = false, path = "../bevy/crates/bevy_ecs" }
-# bevy_gizmos = { version = "0.15", default-features = false, path = "../bevy/crates/bevy_gizmos" }
-# bevy_log = { version = "0.15", default-features = false, path = "../bevy/crates/bevy_log" }
-# bevy_math = { version = "0.15", default-features = false, path = "../bevy/crates/bevy_math" }
-# bevy_mesh = { version = "0.15", default-features = false, path = "../bevy/crates/bevy_mesh" }
-# bevy_reflect = { version = "0.15", default-features = false, path = "../bevy/crates/bevy_reflect" }
-# bevy_render = { version = "0.15", default-features = false, path = "../bevy/crates/bevy_render" }
-# bevy_transform = { version = "0.15", default-features = false, path = "../bevy/crates/bevy_transform" }
+# bevy_app = { path = "../bevy/crates/bevy_app", default-features = false }
+# bevy_asset = { path = "../bevy/crates/bevy_asset", default-features = false }
+# bevy_color = { path = "../bevy/crates/bevy_color", default-features = false }
+# bevy_derive = { path = "../bevy/crates/bevy_derive", default-features = false }
+# bevy_ecs = { path = "../bevy/crates/bevy_ecs", default-features = false }
+# bevy_gizmos = { path = "../bevy/crates/bevy_gizmos", default-features = false }
+# bevy_log = { path = "../bevy/crates/bevy_log", default-features = false }
+# bevy_math = { path = "../bevy/crates/bevy_math", default-features = false }
+# bevy_mesh = { path = "../bevy/crates/bevy_mesh", default-features = false }
+# bevy_reflect = { path = "../bevy/crates/bevy_reflect", default-features = false }
+# bevy_render = { path = "../bevy/crates/bevy_render", default-features = false }
+# bevy_transform = { path = "../bevy/crates/bevy_transform", default-features = false }
 # 
 # [dev-dependencies]
-# bevy = { version = "0.15", path = "../bevy" }
+# bevy = { path = "../bevy" }
 # rand = "0.8"
 # rand_chacha = "0.3"
 # rand_core = "0.6"
