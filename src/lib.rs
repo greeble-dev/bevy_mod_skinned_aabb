@@ -46,7 +46,10 @@ impl Plugin for SkinnedAabbPlugin {
 }
 
 // Match the Mesh limits on joint indices (ATTRIBUTE_JOINT_INDEX = VertexFormat::Uint16x4)
-type JointIndex = u16;
+pub type JointIndex = u16;
+
+// TODO: Bit janky hard-coding this here. Could petition for it to be added to bevy_pbr alongside MAX_JOINTS?
+pub const MAX_INFLUENCES: usize = 4;
 
 // An Aabb3d without padding.
 #[derive(Copy, Clone, Debug, Reflect)]
@@ -138,25 +141,14 @@ struct Influence {
     joint_index: usize,
 }
 
+/// Iterates over all vertex influences with non-zero weight.
+#[derive(Default)]
 struct InfluenceIterator<'a> {
     vertex_index: usize,
     influence_index: usize,
     positions: &'a [[f32; 3]],
     joint_indices: &'a [[u16; 4]],
     joint_weights: &'a [[f32; 4]],
-}
-
-/// Iterates over all vertex influences with non-zero weight.
-impl Default for InfluenceIterator<'_> {
-    fn default() -> Self {
-        InfluenceIterator {
-            vertex_index: 0,
-            influence_index: 0,
-            positions: &[],
-            joint_indices: &[],
-            joint_weights: &[],
-        }
-    }
 }
 
 impl<'a> InfluenceIterator<'a> {
@@ -192,10 +184,6 @@ impl Iterator for InfluenceIterator<'_> {
     type Item = Influence;
 
     fn next(&mut self) -> Option<Influence> {
-        // TODO: Bit janky hard-coding this here. Could petition for it to be
-        // added to bevy_pbr alongside MAX_JOINTS?
-        const MAX_INFLUENCES: usize = 4;
-
         loop {
             assert!(self.influence_index <= MAX_INFLUENCES);
             assert!(self.vertex_index <= self.positions.len());
@@ -244,7 +232,12 @@ fn create_skinned_aabb_asset(
         joint_index,
     } in InfluenceIterator::new(mesh)
     {
-        assert!(joint_index < optional_aabbs.len());
+        // TODO: Replace assert with error?
+
+        assert!(
+            joint_index < num_joints,
+            "Joint index out of range. Joint index = {joint_index}, number of joints = {num_joints}.",
+        );
 
         let jointspace_position = inverse_bindposes[joint_index].transform_point3(position);
 
