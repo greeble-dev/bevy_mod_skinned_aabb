@@ -6,6 +6,8 @@ A [Bevy](https://github.com/bevyengine/bevy) plugin that automatically calculate
 
 https://github.com/user-attachments/assets/73d236da-43a8-4b63-a19e-f3625d374077
 
+The plugin calculates an AABB for each joint in the skinned mesh (white boxes), then uses them to calculate an AABB for the whole mesh (colored boxes).
+
 ## Quick Start
 
 To enable skinned AABBs in your Bevy app, first update your `Cargo.toml` dependencies:
@@ -32,7 +34,7 @@ The plugin will automatically detect and update any skinned meshes that are adde
 
 ## Debug Rendering
 
-To see mesh and joint AABBs, use `SkinnedAabbDebugPlugin`:
+To see the mesh and joint AABBs, use `SkinnedAabbDebugPlugin`:
 
 ```rust
 use bevy_mod_skinned_aabb::prelude::*;
