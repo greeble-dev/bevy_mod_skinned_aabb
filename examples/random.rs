@@ -59,7 +59,7 @@ fn toggle_pause(mut time: ResMut<Time<Virtual>>) {
 fn setup(mut commands: Commands) {
     commands.spawn((
         Camera3d::default(),
-        Transform::from_xyz(0.0, 2.0, 6.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(0.0, 1.0, 10.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 }
 
@@ -99,12 +99,10 @@ fn random_maybe_outlier_vec3_snorm<R: Rng + ?Sized>(rng: &mut R) -> Vec3 {
 //
 // Source: Ken Shoemake, "Uniform Random Rotations", Graphics Gems III, Academic Press, 1992, pp. 124–132.
 //
-// This is different from Glam's random quats, which use a uniformly sampled axis and angle and so are not
-// uniformly distributed on the 3-sphere. Curiously the Glam PR initially used Shoemake but then switched
-// to axis/angle (https://github.com/bitshifter/glam-rs/pull/534).
-//
-// TODO: Should the ranges be inclusive or not?
+// We could have used Glam's default random instead. But it's implemented as a uniformly sampled axis and
+// angle and so is not uniformly distributed on the 3-sphere. Which is probably fine for our purposes, but hey.
 fn random_quat<R: Rng + ?Sized>(rng: &mut R) -> Quat {
+    // TODO: Should these ranges be inclusive or not?
     let r0 = rng.gen_range(0.0f32..TAU);
     let r1 = rng.gen_range(0.0f32..TAU);
     let r2 = rng.gen_range(0.0f32..1.0f32);
@@ -147,9 +145,8 @@ fn random_maybe_outlier_quat<R: Rng + ?Sized>(rng: &mut R) -> Quat {
 }
 
 fn random_transform<R: Rng + ?Sized>(rng: &mut R) -> Transform {
-    let rotation: Quat = random_maybe_outlier_quat(rng);
-
     let translation = random_maybe_outlier_vec3_snorm(rng) * 0.5;
+    let rotation: Quat = random_maybe_outlier_quat(rng);
     let scale = random_maybe_outlier_vec3_snorm(rng);
 
     Transform {
@@ -167,15 +164,18 @@ fn create_random_mesh<R: Rng + ?Sized>(
     rng: &mut R,
     num_tris: usize,
     num_joints: usize,
+    max_influences: Option<usize>,
 ) -> Result<Mesh, RandomMeshError> {
-    let num_verts = num_tris * 3;
+    let max_influences = max_influences.unwrap_or(MAX_INFLUENCES).min(MAX_INFLUENCES);
 
     let num_joints = JointIndex::try_from(num_joints).or(Err(RandomMeshError::InvalidNumJoints))?;
 
     let position_dist = Uniform::new_inclusive(-0.5, 0.5);
     let joint_index_dist = Uniform::new(0, num_joints);
     let joint_weight_dist = Uniform::new(0.01, 1.0);
-    let num_influences_dist = Uniform::new(0, MAX_INFLUENCES);
+    let num_influences_dist = Uniform::new_inclusive(1, max_influences);
+
+    let num_verts = num_tris * 3;
 
     let mut positions = vec![Vec3::ZERO; num_verts];
     let mut joint_indices = vec![[0u16; 4]; num_verts];
@@ -226,10 +226,10 @@ struct NoiseTimeline {
 
 // A sample of a NoiseTimeline.
 struct NoiseSample {
-    // The noise values before and after the sample time.
+    // The two noise values before and after the sample time.
     keys: [u64; 2],
 
-    // The alpha of the time between the values. 0.0 == keys[0], 1 == keys[1].
+    // The alpha of the time between the noise values. 0.0 == keys[0], 1.0 == keys[1].
     alpha: f32,
 }
 
@@ -237,9 +237,7 @@ impl NoiseTimeline {
     fn sample(&self, time: f32) -> NoiseSample {
         assert!(time >= 0.0);
 
-        let ease = EasingCurve::new(0.0, 1.0, EaseFunction::CubicInOut);
-        let alpha = ease.sample_clamped(time.fract());
-
+        let alpha = time.fract();
         let basis = self.seed.wrapping_add(time.trunc() as u64);
         let keys = [hash(basis), hash(basis.wrapping_add(1))];
 
@@ -271,12 +269,18 @@ fn spawn_random_mesh<R: Rng + ?Sized>(
     material: MeshMaterial3d<StandardMaterial>,
     num_tris: usize,
     num_joints: usize,
+    max_influences: Option<usize>,
 ) -> Result<(), RandomMeshError> {
     if num_joints == 0 {
         return Err(RandomMeshError::InvalidNumJoints);
     }
 
-    let mesh_handle = mesh_assets.add(create_random_mesh(rng, num_tris, num_joints)?);
+    let mesh_handle = mesh_assets.add(create_random_mesh(
+        rng,
+        num_tris,
+        num_joints,
+        max_influences,
+    )?);
 
     // Create random inverse bindposes, but leave the root as identity so it's more visually pleasing.
 
@@ -310,10 +314,10 @@ fn spawn_random_mesh<R: Rng + ?Sized>(
     commands
         .spawn((
             transform,
-            Mesh3d(mesh_handle.clone()),
+            Mesh3d(mesh_handle),
             material,
             SkinnedMesh {
-                inverse_bindposes: inverse_bindposes_handle.clone(),
+                inverse_bindposes: inverse_bindposes_handle,
                 joints,
             },
         ))
@@ -339,31 +343,53 @@ fn spawn_random_meshes(
     struct MeshInstance {
         num_tris: usize,
         num_joints: usize,
+        max_influences: Option<usize>,
+        translation: Vec3,
     }
 
     let mesh_instances = [
         MeshInstance {
             num_tris: 100,
             num_joints: 1,
+            max_influences: Some(1),
+            translation: Vec3::new(-3.0, 1.5, 0.0),
         },
         MeshInstance {
             num_tris: 100,
             num_joints: 10,
+            max_influences: Some(1),
+            translation: Vec3::new(0.0, 1.5, 0.0),
         },
         MeshInstance {
             num_tris: 100,
             num_joints: 100,
+            max_influences: Some(1),
+            translation: Vec3::new(3.0, 1.5, 0.0),
+        },
+        MeshInstance {
+            num_tris: 100,
+            num_joints: 1,
+            max_influences: None,
+            translation: Vec3::new(-3.0, -1.5, 0.0),
+        },
+        MeshInstance {
+            num_tris: 100,
+            num_joints: 10,
+            max_influences: None,
+            translation: Vec3::new(0.0, -1.5, 0.0),
+        },
+        MeshInstance {
+            num_tris: 100,
+            num_joints: 100,
+            max_influences: None,
+            translation: Vec3::new(3.0, -1.5, 0.0),
         },
     ];
 
-    let num_meshes = mesh_instances.len();
+    for mesh_instance in mesh_instances {
+        // Create a base entity. This will be the parent of the mesh and the joints.
 
-    for (i, mesh_instance) in mesh_instances.iter().enumerate() {
-        let x = ((i as f32) * 2.0) - ((num_meshes - 1) as f32);
-
-        // Create a base entity whose children will be the mesh and the joints.
-
-        let base_transform = Transform::from_xyz(x, 0.0, 0.0);
+        let base_transform = Transform::from_translation(mesh_instance.translation);
         let base_entity = commands.spawn((base_transform, Visibility::default())).id();
 
         // Give the mesh entity a random translation. This ensures we're not depending on the
@@ -381,6 +407,7 @@ fn spawn_random_meshes(
             material.clone(),
             mesh_instance.num_tris,
             mesh_instance.num_joints,
+            mesh_instance.max_influences,
         );
     }
 }
@@ -395,12 +422,18 @@ fn update_random_meshes(
         let t0 = random_transform(&mut ChaCha8Rng::seed_from_u64(noise.keys[0]));
         let t1 = random_transform(&mut ChaCha8Rng::seed_from_u64(noise.keys[1]));
 
+        // Blend between transforms with a nice ease in/out, and hold each transform
+        // for 1/3rd of a second.
+
+        let ease = EasingCurve::new(0.0, 1.0, EaseFunction::CubicInOut);
+        let alpha = ease.sample_clamped(noise.alpha * 1.5);
+
         // TODO: Feels like there should be a standard function for mixing two transforms?
 
         *transform = Transform {
-            translation: t0.translation.lerp(t1.translation, noise.alpha),
-            rotation: t0.rotation.lerp(t1.rotation, noise.alpha),
-            scale: t0.scale.lerp(t1.scale, noise.alpha),
+            translation: t0.translation.lerp(t1.translation, alpha),
+            rotation: t0.rotation.lerp(t1.rotation, alpha),
+            scale: t0.scale.lerp(t1.scale, alpha),
         };
     }
 }
