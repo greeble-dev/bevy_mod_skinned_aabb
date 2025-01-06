@@ -43,12 +43,20 @@ AdapterInfo { name: "NVIDIA GeForce GT 1030", vendor: 4318, device: 7425, device
     		- 175.55us (across all threads)
 			- 8ns per skinned joint.
     		- Runs on 8 threads, but only ~45% occupancy.
-            - Memory bandwidth = 2 + 24 + 8 + 64  = 98 bytes in 8ns = 12.25GB/s per thread.
-                - Although 2 + 24 = 26 bytes is aabb_to_joint + aabb which is almost certain to be in cache.
-                - So say 9.0GB/s.
-                - DRAM bandwidth is ~70GB/s.
+            - Memory bandwidth per joint.
+                - Data:
+                    - AabbAsset, aabb aabb_to_joint = 2 + 24 = 26
+                        - Shared between all meshes so in L1.
+                    - SkinnedMesh, joint entity = 8
+                    - joint transform = 64
+                    - Say 72 bytes not in L1.
+                    - Might have this wrong - bit unsure how much ECS might read.
+                - So 8ns = 9 GB/s per thread.
+                - DRAM bandwidth is ~70 GB/s.
                 - Would be bandwidth bound at ~7.8 threads.
-                - Although not for this benchmark since the joints fit in L3 (22000 * 64 bytes = 1.4MB) and there's not much else competing for cache space.
+                - Although not for this benchmark since the joints fit in L3 (24000 * 72 bytes = 1.7MB) and there's not much else competing for cache space.
+                - At that size we might even get decent L2 hits.
+                - Needs profiling.
         - Core loop over AABBs is 107 instructions, plus one call to QueryData::get_unchecked_manual (~50 instructions)
 	- `system{name="bevy_mod_skinned_aabb::create_skinned_aabbs"}`
         - 600ns when no new meshes are found.
@@ -72,7 +80,7 @@ AdapterInfo { name: "NVIDIA GeForce GT 1030", vendor: 4318, device: 7425, device
             - Each system is mostly reading or writing joint transforms, and each mesh is independent.
             - So ideally each system would run per-mesh back to back on the same thread - the joints stay in L1/L2 and there's no waiting around.
             - But in reality each system waits for the entire previous system to finish, and there's no correlation between mesh and thread.
-            - So there's lots of bubbles and joints are being read from L3.
+            - So there's lots of bubbles and joints are often being read from L3.
             - Needs more testing to be sure.
         - Assuming systems are the issue, is it solvable?
             - Doesn't seem practical for the ECS to work out that each skinned mesh is independent.
