@@ -23,7 +23,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
-                title: "Skinned AABB Random Meshes: Press J or M to toggle debug rendering".into(),
+                title: "Skinned AABB Random Meshes".into(),
                 ..default()
             }),
             ..default()
@@ -60,6 +60,20 @@ fn setup(mut commands: Commands) {
     commands.spawn((
         Camera3d::default(),
         Transform::from_xyz(0.0, 1.0, 10.0).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
+
+    commands.spawn((
+        Text::new("J: Toggle Joint AABBs\nM: Toggle Mesh AABBs"),
+        TextFont {
+            font_size: 15.0,
+            ..default()
+        },
+        Node {
+            position_type: PositionType::Absolute,
+            top: Val::Px(12.0),
+            left: Val::Px(12.0),
+            ..default()
+        },
     ));
 }
 
