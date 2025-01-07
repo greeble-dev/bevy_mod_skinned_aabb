@@ -71,81 +71,91 @@ fn setup(mut commands: Commands) {
     ));
 }
 
+struct GltfMeshInstance {
+    path: &'static str,
+    transform: Transform,
+    animation_index: usize,
+    animation_speed: f32,
+}
+
+const GLTF_MESH_INSTANCES: &[GltfMeshInstance] = &[
+    GltfMeshInstance {
+        path: "Fox.glb",
+        transform: Transform::from_xyz(-4.75, 5.5, 0.0).with_scale(Vec3::splat(0.06)),
+        animation_index: 2,
+        animation_speed: 0.8,
+    },
+    GltfMeshInstance {
+        path: "RecursiveSkeletons.glb",
+        transform: Transform::from_xyz(7.0, 5.0, 0.0).with_scale(Vec3::splat(0.04)),
+        animation_index: 0,
+        animation_speed: 0.4,
+    },
+];
+
 // A component with the data needed to play an animation on a gltf mesh.
 //
 // This is spawned alongside the gltf's SceneRoot. Then after the scene has spawned, we iterate over the
 // AnimationPlayer components and walk up the hierarchy to find the Animation component.
 #[derive(Component, Debug, Default)]
-struct Animation {
-    handle: Handle<AnimationClip>,
+struct GltfAnimation {
+    graph_handle: Handle<AnimationGraph>,
+    graph_node_index: AnimationNodeIndex,
     speed: f32,
 }
 
-fn setup_gltf_mesh_scenes(mut commands: Commands, asset_server: Res<AssetServer>) {
-    struct MeshInstance {
-        path: &'static str,
-        transform: Transform,
-        animation_index: usize,
-        animation_speed: f32,
-    }
+fn setup_gltf_mesh_scenes(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut graphs: ResMut<Assets<AnimationGraph>>,
+) {
+    for mesh in GLTF_MESH_INSTANCES {
+        let scene = SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset(mesh.path)));
 
-    let mesh_instances = [
-        MeshInstance {
-            path: "Fox.glb",
-            transform: Transform::from_xyz(-4.75, 5.5, 0.0).with_scale(Vec3::splat(0.06)),
-            animation_index: 2,
-            animation_speed: 0.8,
-        },
-        MeshInstance {
-            path: "RecursiveSkeletons.glb",
-            transform: Transform::from_xyz(7.0, 5.0, 0.0).with_scale(Vec3::splat(0.04)),
-            animation_index: 0,
-            animation_speed: 0.4,
-        },
-    ];
+        let animation_clip = asset_server
+            .load(GltfAssetLabel::Animation(mesh.animation_index).from_asset(mesh.path));
 
-    for mesh in mesh_instances {
-        commands.spawn((Turntable, mesh.transform)).with_child((
-            SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset(mesh.path))),
-            Animation {
-                handle: asset_server
-                    .load(GltfAssetLabel::Animation(mesh.animation_index).from_asset(mesh.path)),
-                speed: mesh.animation_speed,
-            },
-        ));
+        let (graph, graph_node_index) = AnimationGraph::from_clip(animation_clip);
+
+        let animation = GltfAnimation {
+            graph_handle: graphs.add(graph),
+            graph_node_index,
+            speed: mesh.animation_speed,
+        };
+
+        commands
+            .spawn((Turntable, mesh.transform))
+            .with_child((scene, animation));
     }
 }
 
 fn setup_gltf_mesh_animations(
     mut commands: Commands,
-    mut graphs: ResMut<Assets<AnimationGraph>>,
     mut players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>,
     ancestors: Query<&Parent>,
-    animations: Query<&Animation>,
+    animations: Query<&GltfAnimation>,
 ) {
     for (entity, mut player) in &mut players {
         if let Some(animation) = ancestors
             .iter_ancestors(entity)
             .find_map(|ancestor| animations.get(ancestor).ok())
         {
-            let (graph, animation_index) = AnimationGraph::from_clip(animation.handle.clone());
-
             commands
                 .entity(entity)
-                .insert(AnimationGraphHandle(graphs.add(graph)));
+                .insert(AnimationGraphHandle(animation.graph_handle.clone()));
 
             player
-                .play(animation_index)
+                .play(animation.graph_node_index)
                 .set_speed(animation.speed)
                 .repeat();
         }
     }
 }
 
-type AnimationId = i8;
+type CustomAnimationId = i8;
 
 #[derive(Component)]
-struct AnimatedJoint(AnimationId);
+struct CustomAnimation(CustomAnimationId);
 
 fn setup_custom_meshes(
     mut commands: Commands,
@@ -215,11 +225,11 @@ fn setup_custom_meshes(
     ]);
 
     struct MeshInstance {
-        animations: [AnimationId; 2],
+        animations: [CustomAnimationId; 2],
     }
 
     let mesh_instances = [
-        // First joint is still, second joint is all rotation/translation/scale variations.
+        // Simple cases. First joint is still, second joint is all rotation/translation/scale variations.
         MeshInstance { animations: [0, 1] },
         MeshInstance { animations: [0, 2] },
         MeshInstance { animations: [0, 3] },
@@ -228,7 +238,7 @@ fn setup_custom_meshes(
         MeshInstance { animations: [0, 6] },
         MeshInstance { animations: [0, 7] },
         MeshInstance { animations: [0, 8] },
-        // First joint is non-uniform scaling, second joint is rotation/translation variations.
+        // Skewed cases. First joint is non-uniform scaling, second joint is rotation/translation variations.
         MeshInstance { animations: [9, 1] },
         MeshInstance { animations: [9, 2] },
         MeshInstance { animations: [9, 3] },
@@ -239,25 +249,33 @@ fn setup_custom_meshes(
     for (i, mesh_instance) in mesh_instances.iter().enumerate() {
         let x = ((i as f32) * 2.0) - ((mesh_instances.len() - 1) as f32);
 
+        let base_entity = commands
+            .spawn((Transform::from_xyz(x, 0.0, 0.0), Visibility::default()))
+            .id();
+
         let joints = vec![
             commands.spawn((Transform::IDENTITY,)).id(),
             commands
                 .spawn((
-                    AnimatedJoint(mesh_instance.animations[0]),
+                    CustomAnimation(mesh_instance.animations[0]),
                     Transform::IDENTITY,
                 ))
                 .id(),
             commands
                 .spawn((
-                    AnimatedJoint(mesh_instance.animations[1]),
-                    Transform::from_xyz(0.0, 1.0, 0.0),
+                    CustomAnimation(mesh_instance.animations[1]),
+                    Transform::IDENTITY,
                 ))
                 .id(),
         ];
 
+        commands.entity(joints[0]).set_parent(base_entity);
+        commands.entity(joints[1]).set_parent(joints[0]);
+        commands.entity(joints[2]).set_parent(joints[1]);
+
         let mesh_entity = commands
             .spawn((
-                Transform::from_xyz(x, 0.0, 0.0),
+                Transform::IDENTITY,
                 Mesh3d(mesh_handle.clone()),
                 MeshMaterial3d(material_assets.add(StandardMaterial {
                     base_color: Color::WHITE,
@@ -271,15 +289,13 @@ fn setup_custom_meshes(
             ))
             .id();
 
-        commands.entity(joints[0]).set_parent(mesh_entity);
-        commands.entity(joints[1]).set_parent(joints[0]);
-        commands.entity(joints[2]).set_parent(joints[1]);
+        commands.entity(mesh_entity).set_parent(base_entity);
     }
 }
 
 fn update_custom_mesh_animation(
     time: Res<Time<Virtual>>,
-    mut query: Query<(&mut Transform, &AnimatedJoint)>,
+    mut query: Query<(&mut Transform, &CustomAnimation)>,
 ) {
     let t = time.elapsed_secs();
     let ts = ops::sin(t);
@@ -287,8 +303,8 @@ fn update_custom_mesh_animation(
     let ots = ops::sin(t + FRAC_PI_4);
     let otc = ops::cos(t + FRAC_PI_4);
 
-    for (mut transform, animated_joint) in &mut query {
-        match animated_joint.0 {
+    for (mut transform, animation) in &mut query {
+        match animation.0 {
             1 => transform.translation = Vec3::new(0.5 * ts, 0.5 + tc, 0.0),
             2 => transform.translation = Vec3::new(0.0, 0.5 + ts, tc),
             3 => transform.rotation = Quat::from_rotation_x(FRAC_PI_2 * ts),
