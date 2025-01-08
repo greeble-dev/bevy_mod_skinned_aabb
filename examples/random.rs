@@ -9,15 +9,16 @@ use bevy::{
 };
 use bevy_mod_skinned_aabb::{
     debug::{toggle_draw_joint_aabbs, toggle_draw_mesh_aabbs, SkinnedAabbDebugPlugin},
+    dev::random_vec3,
     JointIndex, SkinnedAabbPlugin, MAX_INFLUENCES,
 };
-use rand::{distributions::Slice, distributions::Uniform, prelude::Distribution, Rng, SeedableRng};
+use rand::{distributions::Slice, distributions::Uniform, Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
-use std::{borrow::Borrow, iter::once, iter::repeat_with};
 use std::{
     f32::consts::TAU,
     hash::{DefaultHasher, Hash, Hasher},
 };
+use std::{iter::once, iter::repeat_with};
 
 fn main() {
     App::new()
@@ -75,15 +76,6 @@ fn setup(mut commands: Commands) {
             ..default()
         },
     ));
-}
-
-// Returns a Vec3 with each element sampled from the given distribution.
-fn random_vec3<R: Rng + ?Sized, T: Borrow<f32>, D: Distribution<T>>(rng: &mut R, dist: D) -> Vec3 {
-    Vec3::new(
-        *rng.sample(&dist).borrow(),
-        *rng.sample(&dist).borrow(),
-        *rng.sample(&dist).borrow(),
-    )
 }
 
 // Returns a Vec3 with each element uniformly sampled from the set [-1.0, 0.0, 1.0].

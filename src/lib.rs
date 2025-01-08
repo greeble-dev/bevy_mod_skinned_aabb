@@ -23,6 +23,9 @@ use bevy_transform::{components::GlobalTransform, TransformSystem};
 
 pub mod debug;
 
+#[cfg(feature = "dev")]
+pub mod dev;
+
 pub mod prelude {
     pub use crate::debug::prelude::*;
     pub use crate::SkinnedAabbPlugin;
