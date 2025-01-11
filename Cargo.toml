@@ -22,9 +22,9 @@ bevy_reflect = { version = "0.15", default-features = false }
 bevy_render = { version = "0.15", default-features = false }
 bevy_transform = { version = "0.15", default-features = false }
 
-# Dependencies that are only for tests and examples.
-bevy_hierarchy = { version = "0.15", default-features = false, optional = true }
-bevy_time = { version = "0.15", default-features = false, optional = true }
+# Dependencies used by the crate's internal tests and examples.
+bevy_hierarchy = { version = "0.15", optional = true }
+bevy_time = { version = "0.15", optional = true }
 rand = { version = "0.8", optional = true }
 rand_chacha = { version = "0.3", optional = true }
 rand_core = { version = "0.6", optional = true }
@@ -60,14 +60,11 @@ inherits = "release"
 debug = true
 
 [features]
-# TODO: Not sure if this is correct? The goal is to enable an info_trace! macro
-# when feature "bevy/trace" is enabled. But I can't to do that directly in the
-# code with #[cfg(feature = "bevy/trace")], so we have to have a separate feature
-# and specify both?
+# Enable performance tracing (https://github.com/bevyengine/bevy/blob/main/docs/profiling.md).
 trace = []
 
-# Enable utilities and dependencies required by the library's tests and examples.
-# Library users should not enable this feature.
+# Enable utility code used by the crate's internal tests and examples. Crate
+# users should not enable this feature.
 dev = [
 	"dep:bevy_hierarchy",
 	"dep:bevy_time",
