@@ -21,6 +21,10 @@ bevy_mesh = { version = "0.15", default-features = false }
 bevy_reflect = { version = "0.15", default-features = false }
 bevy_render = { version = "0.15", default-features = false }
 bevy_transform = { version = "0.15", default-features = false }
+
+# Dependencies that are only for tests and examples.
+bevy_hierarchy = { version = "0.15", default-features = false, optional = true }
+bevy_time = { version = "0.15", default-features = false, optional = true }
 rand = { version = "0.8", optional = true }
 rand_chacha = { version = "0.3", optional = true }
 rand_core = { version = "0.6", optional = true }
@@ -64,7 +68,13 @@ trace = []
 
 # Enable utilities and dependencies required by the library's tests and examples.
 # Library users should not enable this feature.
-dev = ["dep:rand", "dep:rand_chacha", "dep:rand_core"]
+dev = [
+	"dep:bevy_hierarchy",
+	"dep:bevy_time",
+	"dep:rand",
+	"dep:rand_chacha",
+	"dep:rand_core",
+]
 
 [[example]]
 name = "many_foxes"
@@ -74,4 +84,3 @@ name = "random"
 
 [[example]]
 name = "showcase"
-
