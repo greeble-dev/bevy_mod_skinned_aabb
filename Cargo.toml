@@ -25,6 +25,7 @@ bevy_transform = { version = "0.15", default-features = false }
 # Dependencies used by the crate's internal tests and examples.
 bevy_hierarchy = { version = "0.15", optional = true }
 bevy_time = { version = "0.15", optional = true }
+bevy_tasks = { version = "0.15", optional = true }
 rand = { version = "0.8", optional = true }
 rand_chacha = { version = "0.3", optional = true }
 rand_core = { version = "0.6", optional = true }
@@ -32,6 +33,7 @@ rand_core = { version = "0.6", optional = true }
 [dev-dependencies]
 bevy_mod_skinned_aabb = { path = ".", features = ["dev"] }
 bevy = "0.15"
+criterion = { version = "0.5" }
 
 # Alternative dependencies for testing local changes to bevy crates.
 #
@@ -68,6 +70,7 @@ trace = []
 dev = [
 	"dep:bevy_hierarchy",
 	"dep:bevy_time",
+	"dep:bevy_tasks",
 	"dep:rand",
 	"dep:rand_chacha",
 	"dep:rand_core",
@@ -81,3 +84,7 @@ name = "random"
 
 [[example]]
 name = "showcase"
+
+[[bench]]
+name = "bench"
+harness = false

@@ -331,7 +331,7 @@ fn create_skinned_aabb_component(
     SkinnedAabb { asset: None }
 }
 
-fn create_skinned_aabbs(
+pub fn create_skinned_aabbs(
     mut commands: Commands,
     mesh_assets: Res<Assets<Mesh>>,
     inverse_bindposes_assets: Res<Assets<SkinnedMeshInverseBindposes>>,
@@ -458,22 +458,46 @@ fn get_skinned_aabb(
     }
 }
 
-fn update_skinned_aabbs(
+pub fn update_skinned_aabbs(
     mut query: Query<(&mut Aabb, &SkinnedAabb, &SkinnedMesh, &GlobalTransform)>,
     joints: Query<&GlobalTransform>,
-    assets: Res<Assets<SkinnedAabbAsset>>,
+    assets: Option<Res<Assets<SkinnedAabbAsset>>>,
 ) {
-    query.par_iter_mut().for_each(
-        |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_mesh)| {
-            if let Some(new_entity_aabb) = get_skinned_aabb(
-                skinned_aabb,
-                &joints,
-                &assets,
-                skinned_mesh,
-                &world_from_mesh.affine(),
-            ) {
-                *entity_aabb = new_entity_aabb
-            }
-        },
-    )
+    if let Some(assets) = assets {
+        query.par_iter_mut().for_each(
+            |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_mesh)| {
+                if let Some(new_entity_aabb) = get_skinned_aabb(
+                    skinned_aabb,
+                    &joints,
+                    &assets,
+                    skinned_mesh,
+                    &world_from_mesh.affine(),
+                ) {
+                    *entity_aabb = new_entity_aabb
+                }
+            },
+        )
+    }
+}
+
+pub fn update_skinned_aabbs_nonpar(
+    mut query: Query<(&mut Aabb, &SkinnedAabb, &SkinnedMesh, &GlobalTransform)>,
+    joints: Query<&GlobalTransform>,
+    assets: Option<Res<Assets<SkinnedAabbAsset>>>,
+) {
+    if let Some(assets) = assets {
+        query.iter_mut().for_each(
+            |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_mesh)| {
+                if let Some(new_entity_aabb) = get_skinned_aabb(
+                    skinned_aabb,
+                    &joints,
+                    &assets,
+                    skinned_mesh,
+                    &world_from_mesh.affine(),
+                ) {
+                    *entity_aabb = new_entity_aabb
+                }
+            },
+        )
+    }
 }

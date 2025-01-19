@@ -8,7 +8,7 @@ use bevy_asset::{Assets, RenderAssetUsages};
 use bevy_ecs::{
     component::Component,
     entity::Entity,
-    system::{Commands, Query, Res, ResMut},
+    system::{Commands, Query, Res},
 };
 use bevy_hierarchy::BuildChildren;
 use bevy_math::{
@@ -134,15 +134,17 @@ pub enum RandomMeshError {
 fn create_random_mesh<R: Rng + ?Sized>(
     rng: &mut R,
     num_tris: usize,
-    num_joints: usize,
+    num_unskinned_joints: usize,
+    num_skinned_joints: usize,
     max_influences: Option<usize>,
 ) -> Result<Mesh, RandomMeshError> {
     let max_influences = max_influences.unwrap_or(MAX_INFLUENCES).min(MAX_INFLUENCES);
 
-    let num_joints = JointIndex::try_from(num_joints).or(Err(RandomMeshError::InvalidNumJoints))?;
+    let num_joints = JointIndex::try_from(num_unskinned_joints + num_skinned_joints)
+        .or(Err(RandomMeshError::InvalidNumJoints))?;
 
     let position_dist = Uniform::new_inclusive(-0.5, 0.5);
-    let joint_index_dist = Uniform::new(0, num_joints);
+    let joint_index_dist = Uniform::new(num_unskinned_joints as JointIndex, num_joints);
     let joint_weight_dist = Uniform::new(0.01, 1.0);
     let num_influences_dist = Uniform::new_inclusive(1, max_influences);
 
@@ -233,22 +235,21 @@ impl RandomMeshAnimation {
 pub fn spawn_random_mesh<R: Rng + ?Sized>(
     rng: &mut R,
     commands: &mut Commands,
-    mesh_assets: &mut ResMut<Assets<Mesh>>,
-    inverse_bindposes_assets: &mut ResMut<Assets<SkinnedMeshInverseBindposes>>,
+    mesh_assets: &mut Assets<Mesh>,
+    inverse_bindposes_assets: &mut Assets<SkinnedMeshInverseBindposes>,
     base: Entity,
     transform: Transform,
     num_tris: usize,
-    num_joints: usize,
+    num_skinned_joints: usize,
     max_influences: Option<usize>,
 ) -> Result<Entity, RandomMeshError> {
-    if num_joints == 0 {
-        return Err(RandomMeshError::InvalidNumJoints);
-    }
+    let num_joints = 1 + num_skinned_joints;
 
     let mesh_handle = mesh_assets.add(create_random_mesh(
         rng,
         num_tris,
-        num_joints,
+        1,
+        num_skinned_joints,
         max_influences,
     )?);
 
@@ -263,7 +264,7 @@ pub fn spawn_random_mesh<R: Rng + ?Sized>(
 
     let inverse_bindposes_handle = inverse_bindposes_assets.add(inverse_bindposes);
 
-    let mut joints: Vec<Entity> = Vec::with_capacity(num_joints);
+    let mut joints: Vec<Entity> = Vec::with_capacity(num_skinned_joints + 1);
 
     let root_joint = commands
         .spawn((Transform::IDENTITY, RandomMeshAnimation::new(rng.gen())))
@@ -272,7 +273,7 @@ pub fn spawn_random_mesh<R: Rng + ?Sized>(
 
     joints.push(root_joint);
 
-    for _ in 1..num_joints {
+    for _ in 0..num_skinned_joints {
         let joint = commands
             .spawn((Transform::IDENTITY, RandomMeshAnimation::new(rng.gen())))
             .set_parent(root_joint)
