@@ -470,33 +470,23 @@ pub fn update_skinned_aabbs(
     assets: Res<Assets<SkinnedAabbAsset>>,
     settings: Res<SkinnedAabbSettings>,
 ) {
+    // Awkward closure so we don't have to duplicate the par/non-par paths. TODO: Urgh?
+    let update =
+        |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_entity): (Mut<Aabb>, _, _, _)| {
+            if let Some(updated) = get_skinned_aabb(
+                skinned_aabb,
+                &joints,
+                &assets,
+                skinned_mesh,
+                world_from_entity,
+            ) {
+                *entity_aabb = updated;
+            }
+        };
+
     if settings.parallel {
-        query.par_iter_mut().for_each(
-            |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_entity)| {
-                if let Some(updated) = get_skinned_aabb(
-                    skinned_aabb,
-                    &joints,
-                    &assets,
-                    skinned_mesh,
-                    world_from_entity,
-                ) {
-                    *entity_aabb = updated;
-                }
-            },
-        );
+        query.par_iter_mut().for_each(update);
     } else {
-        query.iter_mut().for_each(
-            |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_entity)| {
-                if let Some(updated) = get_skinned_aabb(
-                    skinned_aabb,
-                    &joints,
-                    &assets,
-                    skinned_mesh,
-                    world_from_entity,
-                ) {
-                    *entity_aabb = updated;
-                }
-            },
-        );
+        query.iter_mut().for_each(update);
     }
 }
