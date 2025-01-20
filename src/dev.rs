@@ -131,22 +131,19 @@ pub enum RandomMeshError {
     InvalidNumJoints,
 }
 
-fn create_random_mesh(
+fn create_random_soft_skinned_mesh(
     rng: &mut dyn RngCore,
     num_tris: usize,
     num_unskinned_joints: usize,
     num_skinned_joints: usize,
-    max_influences: Option<usize>,
 ) -> Result<Mesh, RandomMeshError> {
-    let max_influences = max_influences.unwrap_or(MAX_INFLUENCES).min(MAX_INFLUENCES);
-
     let num_joints = JointIndex::try_from(num_unskinned_joints + num_skinned_joints)
         .or(Err(RandomMeshError::InvalidNumJoints))?;
 
     let position_dist = Uniform::new_inclusive(-0.5, 0.5);
     let joint_index_dist = Uniform::new(num_unskinned_joints as JointIndex, num_joints);
     let joint_weight_dist = Uniform::new(0.01, 1.0);
-    let num_influences_dist = Uniform::new_inclusive(1, max_influences);
+    let num_influences_dist = Uniform::new_inclusive(1, MAX_INFLUENCES);
 
     let num_verts = num_tris * 3;
 
@@ -185,20 +182,69 @@ fn create_random_mesh(
     .with_inserted_attribute(Mesh::ATTRIBUTE_JOINT_WEIGHT, joint_weights))
 }
 
+fn create_random_hard_skinned_mesh(
+    rng: &mut dyn RngCore,
+    num_unskinned_joints: usize,
+    num_skinned_joints: usize,
+) -> Result<Mesh, RandomMeshError> {
+    // Check that all the joints can fit in a JointIndex.
+    if JointIndex::try_from(num_unskinned_joints + num_skinned_joints).is_err() {
+        return Err(RandomMeshError::InvalidNumJoints);
+    };
+
+    let position_dist = Uniform::new_inclusive(-0.5, 0.5);
+
+    let num_tris = num_skinned_joints;
+    let num_verts = num_tris * 3;
+
+    let mut positions = vec![Vec3::ZERO; num_verts];
+    let mut joint_indices = vec![[0u16; 4]; num_verts];
+
+    // More tris = smaller tris.
+    let scale = 1.0 / ((num_skinned_joints as f32) * 0.2).cbrt();
+
+    for tri_index in 0..num_skinned_joints {
+        let joint_index = (num_unskinned_joints + tri_index) as JointIndex;
+
+        let base_position = random_vec3(rng, position_dist);
+
+        let tri_vert_positions = [
+            base_position + (scale * random_vec3(rng, position_dist)),
+            base_position + (scale * random_vec3(rng, position_dist)),
+            base_position + (scale * random_vec3(rng, position_dist)),
+        ];
+
+        let vert_joint_indices = [joint_index, 0, 0, 0];
+
+        for (tri_vert_index, tri_vert_position) in tri_vert_positions.iter().enumerate() {
+            let vert_index = (tri_index * 3) + tri_vert_index;
+            positions[vert_index] = *tri_vert_position;
+            joint_indices[vert_index] = vert_joint_indices;
+        }
+    }
+
+    let joint_weights = vec![[1.0f32, 0.0f32, 0.0f32, 0.0f32]; num_verts];
+
+    Ok(Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::default(),
+    )
+    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
+    .with_inserted_attribute(
+        Mesh::ATTRIBUTE_JOINT_INDEX,
+        VertexAttributeValues::Uint16x4(joint_indices),
+    )
+    .with_inserted_attribute(Mesh::ATTRIBUTE_JOINT_WEIGHT, joint_weights))
+}
+
 fn create_random_inverse_bindposes(
     rng: &mut dyn RngCore,
     num_joints: usize,
 ) -> SkinnedMeshInverseBindposes {
-    let random_transform_iter = repeat_with(|| random_transform(rng).compute_matrix());
-
     // Leave the root as identity so it's more visually pleasing.
+    let iter = once(Mat4::IDENTITY).chain(repeat_with(|| random_transform(rng).compute_matrix()));
 
-    SkinnedMeshInverseBindposes::from(
-        once(Mat4::IDENTITY)
-            .chain(random_transform_iter)
-            .take(num_joints)
-            .collect::<Vec<_>>(),
-    )
+    SkinnedMeshInverseBindposes::from(iter.take(num_joints).collect::<Vec<_>>())
 }
 
 pub struct SkinnedMeshAssets {
@@ -207,24 +253,32 @@ pub struct SkinnedMeshAssets {
     num_joints: usize,
 }
 
+pub enum RandomSkinnedMeshType {
+    Hard,
+    Soft { num_tris: usize },
+}
+
 pub fn create_random_skinned_mesh_assets(
     mesh_assets: &mut Assets<Mesh>,
     inverse_bindposes_assets: &mut Assets<SkinnedMeshInverseBindposes>,
     rng: &mut dyn RngCore,
-    num_tris: usize,
+    mesh_type: RandomSkinnedMeshType,
     num_unskinned_joints: usize,
     num_skinned_joints: usize,
-    max_influences: Option<usize>,
 ) -> Result<SkinnedMeshAssets, RandomMeshError> {
     let num_joints = num_unskinned_joints + num_skinned_joints;
 
-    let mesh = mesh_assets.add(create_random_mesh(
-        rng,
-        num_tris,
-        num_unskinned_joints,
-        num_skinned_joints,
-        max_influences,
-    )?);
+    let mesh = match mesh_type {
+        RandomSkinnedMeshType::Soft { num_tris } => {
+            create_random_soft_skinned_mesh(rng, num_tris, num_unskinned_joints, num_skinned_joints)
+        }
+        RandomSkinnedMeshType::Hard => {
+            create_random_hard_skinned_mesh(rng, num_unskinned_joints, num_skinned_joints)
+        }
+    }?;
+
+    let mesh = mesh_assets.add(mesh);
+
     let inverse_bindposes =
         inverse_bindposes_assets.add(create_random_inverse_bindposes(rng, num_joints));
 
@@ -333,16 +387,15 @@ pub fn spawn_random_skinned_mesh(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn create_and_spawn_random_mesh(
+pub fn create_and_spawn_random_skinned_mesh(
     commands: &mut Commands,
     mesh_assets: &mut Assets<Mesh>,
     inverse_bindposes_assets: &mut Assets<SkinnedMeshInverseBindposes>,
     rng: &mut dyn RngCore,
     base: Entity,
     transform: Transform,
-    num_tris: usize,
+    mesh_type: RandomSkinnedMeshType,
     num_skinned_joints: usize,
-    max_influences: Option<usize>,
 ) -> Result<Entity, RandomMeshError> {
     let num_unskinned_joints = 1;
 
@@ -350,10 +403,9 @@ pub fn create_and_spawn_random_mesh(
         mesh_assets,
         inverse_bindposes_assets,
         rng,
-        num_tris,
+        mesh_type,
         num_unskinned_joints,
         num_skinned_joints,
-        max_influences,
     )?;
 
     Ok(spawn_random_skinned_mesh(

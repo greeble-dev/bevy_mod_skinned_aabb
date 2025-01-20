@@ -4,7 +4,10 @@ use bevy::{
 };
 use bevy_mod_skinned_aabb::{
     debug::{toggle_draw_joint_aabbs, toggle_draw_mesh_aabbs, SkinnedAabbDebugPlugin},
-    dev::{create_and_spawn_random_mesh, random_vec3_snorm, update_random_meshes},
+    dev::{
+        create_and_spawn_random_skinned_mesh, random_vec3_snorm, update_random_meshes,
+        RandomSkinnedMeshType,
+    },
     SkinnedAabbPlugin,
 };
 use rand::SeedableRng;
@@ -83,47 +86,40 @@ fn spawn_random_meshes(
     }));
 
     struct MeshInstance {
-        num_tris: usize,
+        mesh_type: RandomSkinnedMeshType,
         num_joints: usize,
-        max_influences: Option<usize>,
         translation: Vec3,
     }
 
     let mesh_instances = [
         MeshInstance {
-            num_tris: 100,
+            mesh_type: RandomSkinnedMeshType::Hard,
             num_joints: 1,
-            max_influences: Some(1),
             translation: Vec3::new(-3.0, 1.5, 0.0),
         },
         MeshInstance {
-            num_tris: 100,
-            num_joints: 10,
-            max_influences: Some(1),
+            mesh_type: RandomSkinnedMeshType::Hard,
+            num_joints: 20,
             translation: Vec3::new(0.0, 1.5, 0.0),
         },
         MeshInstance {
-            num_tris: 100,
-            num_joints: 100,
-            max_influences: Some(1),
+            mesh_type: RandomSkinnedMeshType::Hard,
+            num_joints: 200,
             translation: Vec3::new(3.0, 1.5, 0.0),
         },
         MeshInstance {
-            num_tris: 100,
+            mesh_type: RandomSkinnedMeshType::Soft { num_tris: 100 },
             num_joints: 1,
-            max_influences: None,
             translation: Vec3::new(-3.0, -1.5, 0.0),
         },
         MeshInstance {
-            num_tris: 100,
-            num_joints: 10,
-            max_influences: None,
+            mesh_type: RandomSkinnedMeshType::Soft { num_tris: 100 },
+            num_joints: 20,
             translation: Vec3::new(0.0, -1.5, 0.0),
         },
         MeshInstance {
-            num_tris: 100,
-            num_joints: 100,
-            max_influences: None,
+            mesh_type: RandomSkinnedMeshType::Soft { num_tris: 100 },
+            num_joints: 200,
             translation: Vec3::new(3.0, -1.5, 0.0),
         },
     ];
@@ -139,16 +135,15 @@ fn spawn_random_meshes(
 
         let mesh_transform = Transform::from_translation(random_vec3_snorm(&mut rng));
 
-        if let Ok(entity) = create_and_spawn_random_mesh(
+        if let Ok(entity) = create_and_spawn_random_skinned_mesh(
             &mut commands,
             &mut mesh_assets,
             &mut inverse_bindposes_assets,
             &mut rng,
             base_entity,
             mesh_transform,
-            mesh_instance.num_tris,
+            mesh_instance.mesh_type,
             mesh_instance.num_joints,
-            mesh_instance.max_influences,
         ) {
             commands.entity(entity).insert(material.clone());
         }

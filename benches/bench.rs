@@ -2,8 +2,9 @@ use bevy_asset::Assets;
 use bevy_ecs::{prelude::*, system::FunctionSystem};
 use bevy_mesh::{skinning::SkinnedMeshInverseBindposes, Mesh};
 use bevy_mod_skinned_aabb::{
-    create_skinned_aabbs, dev::create_and_spawn_random_mesh, update_skinned_aabbs_nonpar,
-    SkinnedAabbAsset,
+    create_skinned_aabbs,
+    dev::{create_and_spawn_random_skinned_mesh, RandomSkinnedMeshType},
+    update_skinned_aabbs_nonpar, SkinnedAabbAsset,
 };
 use bevy_render::primitives::Aabb;
 use bevy_tasks::{ComputeTaskPool, TaskPool};
@@ -34,9 +35,7 @@ where
 }
 
 const NUM_MESHES: usize = 100;
-const NUM_TRIS: usize = 1000;
 const NUM_JOINTS: usize = 100;
-const MAX_INFLUENCES: usize = 4;
 
 fn create_meshes(
     mut commands: Commands,
@@ -47,16 +46,15 @@ fn create_meshes(
     let base_entity = commands.spawn(Transform::IDENTITY).id();
 
     for _ in 0..NUM_MESHES {
-        if let Ok(entity) = create_and_spawn_random_mesh(
+        if let Ok(entity) = create_and_spawn_random_skinned_mesh(
             &mut commands,
             &mut mesh_assets,
             &mut inverse_bindposes_assets,
             &mut rng,
             base_entity,
             Transform::IDENTITY,
-            NUM_TRIS,
+            RandomSkinnedMeshType::Hard,
             NUM_JOINTS,
-            Some(MAX_INFLUENCES),
         ) {
             commands.entity(entity).insert(Aabb::default());
         }
