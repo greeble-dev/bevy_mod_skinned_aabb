@@ -454,7 +454,6 @@ fn get_skinned_aabb(
     }
 
     // If min > max then no joints were found.
-
     if entity_aabb.min.x > entity_aabb.max.x {
         return None;
     }
@@ -465,21 +464,6 @@ fn get_skinned_aabb(
     ))
 }
 
-fn update_skinned_aabb(
-    out: &mut Aabb,
-    component: &SkinnedAabb,
-    joints: &Query<&GlobalTransform>,
-    assets: &Res<Assets<SkinnedAabbAsset>>,
-    skinned_mesh: &SkinnedMesh,
-    world_from_entity: &GlobalTransform,
-) {
-    if let Some(updated) =
-        get_skinned_aabb(component, joints, assets, skinned_mesh, world_from_entity)
-    {
-        *out = updated;
-    }
-}
-
 pub fn update_skinned_aabbs(
     mut query: Query<(&mut Aabb, &SkinnedAabb, &SkinnedMesh, &GlobalTransform)>,
     joints: Query<&GlobalTransform>,
@@ -488,28 +472,30 @@ pub fn update_skinned_aabbs(
 ) {
     if settings.parallel {
         query.par_iter_mut().for_each(
-            |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_mesh)| {
-                update_skinned_aabb(
-                    &mut entity_aabb,
+            |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_entity)| {
+                if let Some(updated) = get_skinned_aabb(
                     skinned_aabb,
                     &joints,
                     &assets,
                     skinned_mesh,
-                    world_from_mesh,
-                );
+                    world_from_entity,
+                ) {
+                    *entity_aabb = updated;
+                }
             },
         );
     } else {
         query.iter_mut().for_each(
-            |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_mesh)| {
-                update_skinned_aabb(
-                    &mut entity_aabb,
+            |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_entity)| {
+                if let Some(updated) = get_skinned_aabb(
                     skinned_aabb,
                     &joints,
                     &assets,
                     skinned_mesh,
-                    world_from_mesh,
-                );
+                    world_from_entity,
+                ) {
+                    *entity_aabb = updated;
+                }
             },
         );
     }
