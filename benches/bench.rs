@@ -3,10 +3,7 @@ use bevy_ecs::{prelude::*, system::FunctionSystem};
 use bevy_mesh::{skinning::SkinnedMeshInverseBindposes, Mesh};
 use bevy_mod_skinned_aabb::{
     create_skinned_aabbs,
-    dev::{
-        create_and_spawn_random_skinned_mesh, create_random_skinned_mesh_assets,
-        spawn_random_skinned_mesh, RandomSkinnedMeshType,
-    },
+    dev::{create_random_skinned_mesh_assets, spawn_random_skinned_mesh, RandomSkinnedMeshType},
     update_skinned_aabbs_nonpar, SkinnedAabbAsset,
 };
 use bevy_tasks::{ComputeTaskPool, TaskPool};
@@ -15,6 +12,7 @@ use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Bencher, Criterion};
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
+use std::iter::repeat_with;
 
 fn init_system<M, F>(func: F, world: &mut World) -> FunctionSystem<M, F>
 where
@@ -38,7 +36,7 @@ where
 
 #[derive(Resource, Copy, Clone)]
 struct MeshParams {
-    shared: bool,
+    num_assets: usize,
     num_meshes: usize,
     num_joints: usize,
 }
@@ -52,40 +50,29 @@ fn create_meshes(
     let mut rng = ChaCha8Rng::seed_from_u64(732935);
     let base_entity = commands.spawn(Transform::IDENTITY).id();
 
-    if params.shared {
-        if let Ok(assets) = create_random_skinned_mesh_assets(
+    let assets = repeat_with(|| {
+        create_random_skinned_mesh_assets(
             &mut mesh_assets,
             &mut inverse_bindposes_assets,
             &mut rng,
             RandomSkinnedMeshType::Hard,
             1,
             params.num_joints,
-        ) {
-            let base = commands.spawn(Transform::IDENTITY).id();
+        )
+        .ok()
+    })
+    .take(params.num_assets)
+    .flatten()
+    .collect::<Vec<_>>();
 
-            for _ in 0..params.num_meshes {
-                spawn_random_skinned_mesh(
-                    &mut commands,
-                    &mut rng,
-                    base,
-                    Transform::IDENTITY,
-                    &assets,
-                );
-            }
-        }
-    } else {
-        for _ in 0..params.num_meshes {
-            let _ = create_and_spawn_random_skinned_mesh(
-                &mut commands,
-                &mut mesh_assets,
-                &mut inverse_bindposes_assets,
-                &mut rng,
-                base_entity,
-                Transform::IDENTITY,
-                RandomSkinnedMeshType::Hard,
-                params.num_joints,
-            );
-        }
+    for entity_index in 0..params.num_meshes {
+        spawn_random_skinned_mesh(
+            &mut commands,
+            &mut rng,
+            base_entity,
+            Transform::IDENTITY,
+            &assets[entity_index % assets.len()],
+        );
     }
 }
 
@@ -119,49 +106,49 @@ pub fn bench(c: &mut Criterion) {
 
     let params_list = [
         Params {
-            name: "10000 joints total, 200 joints per mesh, shared asset",
+            name: "10000 joints total, 200 joints per mesh, 50 meshes, 1 asset",
             mesh_params: MeshParams {
-                shared: true,
+                num_assets: 1,
                 num_meshes: 50,
                 num_joints: 200,
             },
         },
         Params {
-            name: "10000 joints total, 20 joints per mesh, shared asset",
+            name: "10000 joints total, 20 joints per mesh, 500 meshes, 1 asset",
             mesh_params: MeshParams {
-                shared: true,
+                num_assets: 1,
                 num_meshes: 500,
                 num_joints: 20,
             },
         },
         Params {
-            name: "10000 joints total, 1 joint per mesh, shared asset",
+            name: "10000 joints total, 1 joint per mesh, 10000 meshes, 1 asset",
             mesh_params: MeshParams {
-                shared: true,
+                num_assets: 1,
                 num_meshes: 10000,
                 num_joints: 1,
             },
         },
         Params {
-            name: "10000 joints total, 200 joints per mesh, unique assets",
+            name: "10000 joints total, 200 joints per mesh, 50 meshes, 50 assets",
             mesh_params: MeshParams {
-                shared: false,
+                num_assets: 50,
                 num_meshes: 50,
                 num_joints: 200,
             },
         },
         Params {
-            name: "10000 joints total, 20 joints per mesh, unique assets",
+            name: "10000 joints total, 20 joints per mesh, 500 meshes, 50 assets",
             mesh_params: MeshParams {
-                shared: false,
+                num_assets: 50,
                 num_meshes: 500,
                 num_joints: 20,
             },
         },
         Params {
-            name: "10000 joints total, 1 joint per mesh, unique assets",
+            name: "10000 joints total, 1 joint per mesh, 10000 meshes, 50 assets",
             mesh_params: MeshParams {
-                shared: false,
+                num_assets: 50,
                 num_meshes: 10000,
                 num_joints: 1,
             },
