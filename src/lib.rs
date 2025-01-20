@@ -116,6 +116,7 @@ impl SkinnedAabbAsset {
     }
 }
 
+// TODO: Is this name misleading? Could be interpreted as the actual AABB.
 #[derive(Component, Debug, Default)]
 pub struct SkinnedAabb {
     // Optional asset. This is optional because the skinned aabb can fail to create due to missing
@@ -420,10 +421,10 @@ fn get_skinned_aabb(
     joints: &Query<&GlobalTransform>,
     assets: &Res<Assets<SkinnedAabbAsset>>,
     skinned_mesh: &SkinnedMesh,
-    world_from_entity: &Affine3A,
+    world_from_entity: &GlobalTransform,
 ) -> Option<Aabb> {
     let asset = assets.get(component.asset.as_ref()?)?;
-
+    let world_from_entity = world_from_entity.affine();
     let num_aabbs = asset.num_aabbs();
 
     if num_aabbs == 0 {
@@ -449,55 +450,64 @@ fn get_skinned_aabb(
     // If min > max then no joints were found.
 
     if entity_aabb.min.x > entity_aabb.max.x {
-        None
-    } else {
-        Some(Aabb::from_min_max(
-            Vec3::from(entity_aabb.min),
-            Vec3::from(entity_aabb.max),
-        ))
+        return None;
+    }
+
+    Some(Aabb::from_min_max(
+        Vec3::from(entity_aabb.min),
+        Vec3::from(entity_aabb.max),
+    ))
+}
+
+fn update_skinned_aabb(
+    out: &mut Aabb,
+    component: &SkinnedAabb,
+    joints: &Query<&GlobalTransform>,
+    assets: &Res<Assets<SkinnedAabbAsset>>,
+    skinned_mesh: &SkinnedMesh,
+    world_from_entity: &GlobalTransform,
+) {
+    if let Some(updated) =
+        get_skinned_aabb(component, joints, assets, skinned_mesh, world_from_entity)
+    {
+        *out = updated;
     }
 }
 
 pub fn update_skinned_aabbs(
     mut query: Query<(&mut Aabb, &SkinnedAabb, &SkinnedMesh, &GlobalTransform)>,
     joints: Query<&GlobalTransform>,
-    assets: Option<Res<Assets<SkinnedAabbAsset>>>,
+    assets: Res<Assets<SkinnedAabbAsset>>,
 ) {
-    if let Some(assets) = assets {
-        query.par_iter_mut().for_each(
-            |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_mesh)| {
-                if let Some(new_entity_aabb) = get_skinned_aabb(
-                    skinned_aabb,
-                    &joints,
-                    &assets,
-                    skinned_mesh,
-                    &world_from_mesh.affine(),
-                ) {
-                    *entity_aabb = new_entity_aabb
-                }
-            },
-        )
-    }
+    query.par_iter_mut().for_each(
+        |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_mesh)| {
+            update_skinned_aabb(
+                &mut entity_aabb,
+                skinned_aabb,
+                &joints,
+                &assets,
+                skinned_mesh,
+                world_from_mesh,
+            );
+        },
+    );
 }
 
 pub fn update_skinned_aabbs_nonpar(
     mut query: Query<(&mut Aabb, &SkinnedAabb, &SkinnedMesh, &GlobalTransform)>,
     joints: Query<&GlobalTransform>,
-    assets: Option<Res<Assets<SkinnedAabbAsset>>>,
+    assets: Res<Assets<SkinnedAabbAsset>>,
 ) {
-    if let Some(assets) = assets {
-        query.iter_mut().for_each(
-            |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_mesh)| {
-                if let Some(new_entity_aabb) = get_skinned_aabb(
-                    skinned_aabb,
-                    &joints,
-                    &assets,
-                    skinned_mesh,
-                    &world_from_mesh.affine(),
-                ) {
-                    *entity_aabb = new_entity_aabb
-                }
-            },
-        )
-    }
+    query.iter_mut().for_each(
+        |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_mesh)| {
+            update_skinned_aabb(
+                &mut entity_aabb,
+                skinned_aabb,
+                &joints,
+                &assets,
+                skinned_mesh,
+                world_from_mesh,
+            );
+        },
+    );
 }
