@@ -96,6 +96,7 @@ fn bench_internal(b: &mut Bencher, settings: &SkinnedAabbSettings, mesh_params: 
 
 pub fn bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("bench");
+
     group.warm_up_time(Duration::from_millis(100));
     group.measurement_time(Duration::from_millis(1000));
 
@@ -103,7 +104,6 @@ pub fn bench(c: &mut Criterion) {
         for num_assets in [1, 100] {
             for num_joints_total in [1_000, 10_000, 100_000, 1_000_000] {
                 group.sample_size(if num_joints_total >= 100_000 { 10 } else { 50 });
-                //group.sample_size(20);
                 group.throughput(Throughput::Elements(num_joints_total as u64));
 
                 for num_meshes in [10_000, 1_000, 100, 10] {
@@ -138,6 +138,7 @@ pub fn bench(c: &mut Criterion) {
             }
         }
     }
+
     group.finish();
 }
 
