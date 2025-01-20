@@ -37,6 +37,7 @@ pub struct SkinnedAabbPlugin;
 impl Plugin for SkinnedAabbPlugin {
     fn build(&self, app: &mut App) {
         app.init_asset::<SkinnedAabbAsset>()
+            .insert_resource(SkinnedAabbSettings { parallel: true })
             .add_systems(Update, create_skinned_aabbs)
             .add_systems(
                 PostUpdate,
@@ -46,6 +47,11 @@ impl Plugin for SkinnedAabbPlugin {
                     .before(VisibilitySystems::CheckVisibility),
             );
     }
+}
+
+#[derive(Resource, Copy, Clone)]
+pub struct SkinnedAabbSettings {
+    pub parallel: bool,
 }
 
 // Match the Mesh limits on joint indices (ATTRIBUTE_JOINT_INDEX = VertexFormat::Uint16x4)
@@ -478,36 +484,33 @@ pub fn update_skinned_aabbs(
     mut query: Query<(&mut Aabb, &SkinnedAabb, &SkinnedMesh, &GlobalTransform)>,
     joints: Query<&GlobalTransform>,
     assets: Res<Assets<SkinnedAabbAsset>>,
+    settings: Res<SkinnedAabbSettings>,
 ) {
-    query.par_iter_mut().for_each(
-        |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_mesh)| {
-            update_skinned_aabb(
-                &mut entity_aabb,
-                skinned_aabb,
-                &joints,
-                &assets,
-                skinned_mesh,
-                world_from_mesh,
-            );
-        },
-    );
-}
-
-pub fn update_skinned_aabbs_nonpar(
-    mut query: Query<(&mut Aabb, &SkinnedAabb, &SkinnedMesh, &GlobalTransform)>,
-    joints: Query<&GlobalTransform>,
-    assets: Res<Assets<SkinnedAabbAsset>>,
-) {
-    query.iter_mut().for_each(
-        |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_mesh)| {
-            update_skinned_aabb(
-                &mut entity_aabb,
-                skinned_aabb,
-                &joints,
-                &assets,
-                skinned_mesh,
-                world_from_mesh,
-            );
-        },
-    );
+    if settings.parallel {
+        query.par_iter_mut().for_each(
+            |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_mesh)| {
+                update_skinned_aabb(
+                    &mut entity_aabb,
+                    skinned_aabb,
+                    &joints,
+                    &assets,
+                    skinned_mesh,
+                    world_from_mesh,
+                );
+            },
+        );
+    } else {
+        query.iter_mut().for_each(
+            |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_mesh)| {
+                update_skinned_aabb(
+                    &mut entity_aabb,
+                    skinned_aabb,
+                    &joints,
+                    &assets,
+                    skinned_mesh,
+                    world_from_mesh,
+                );
+            },
+        );
+    }
 }
