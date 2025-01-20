@@ -6,6 +6,7 @@ use bevy::{
         skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
         PrimitiveTopology, VertexAttributeValues,
     },
+    scene::SceneInstanceReady,
 };
 use bevy_mod_skinned_aabb::prelude::*;
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
@@ -36,7 +37,6 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(Startup, setup_gltf_mesh_scenes)
         .add_systems(Startup, setup_custom_meshes)
-        .add_systems(Update, setup_gltf_mesh_animations)
         .add_systems(Update, update_custom_mesh_animation)
         .add_systems(Update, update_turntables)
         .run();
@@ -124,30 +124,30 @@ fn setup_gltf_mesh_scenes(
         };
 
         commands
-            .spawn((Turntable, mesh.transform))
-            .with_child((scene, animation));
+            .spawn((Turntable, scene, animation, mesh.transform))
+            .observe(setup_gltf_mesh_animations);
     }
 }
 
 fn setup_gltf_mesh_animations(
+    trigger: Trigger<SceneInstanceReady>,
     mut commands: Commands,
-    mut players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>,
-    ancestors: Query<&Parent>,
+    children: Query<&Children>,
     animations: Query<&GltfAnimation>,
+    mut players: Query<&mut AnimationPlayer>,
 ) {
-    for (entity, mut player) in &mut players {
-        if let Some(animation) = ancestors
-            .iter_ancestors(entity)
-            .find_map(|ancestor| animations.get(ancestor).ok())
-        {
-            commands
-                .entity(entity)
-                .insert(AnimationGraphHandle(animation.graph_handle.clone()));
+    if let Ok(animation) = animations.get(trigger.entity()) {
+        for child in children.iter_descendants(trigger.entity()) {
+            if let Ok(mut player) = players.get_mut(child) {
+                player
+                    .play(animation.graph_node_index)
+                    .set_speed(animation.speed)
+                    .repeat();
 
-            player
-                .play(animation.graph_node_index)
-                .set_speed(animation.speed)
-                .repeat();
+                commands
+                    .entity(child)
+                    .insert(AnimationGraphHandle(animation.graph_handle.clone()));
+            }
         }
     }
 }
