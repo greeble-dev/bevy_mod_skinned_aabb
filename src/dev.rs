@@ -16,9 +16,12 @@ use bevy_math::{
     ops, Mat4, Quat, Vec3,
 };
 use bevy_mesh::Mesh;
-use bevy_render::mesh::{
-    skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
-    Mesh3d, PrimitiveTopology, VertexAttributeValues,
+use bevy_render::{
+    mesh::{
+        skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
+        Mesh3d, PrimitiveTopology, VertexAttributeValues,
+    },
+    primitives::Aabb,
 };
 use bevy_time::{Time, Virtual};
 use bevy_transform::components::Transform;
@@ -381,6 +384,7 @@ pub fn spawn_random_skinned_mesh(
                 inverse_bindposes: assets.inverse_bindposes.clone(),
                 joints,
             },
+            Aabb::default(),
         ))
         .set_parent(base)
         .id()
