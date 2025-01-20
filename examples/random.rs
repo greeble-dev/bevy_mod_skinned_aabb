@@ -4,7 +4,7 @@ use bevy::{
 };
 use bevy_mod_skinned_aabb::{
     debug::{toggle_draw_joint_aabbs, toggle_draw_mesh_aabbs, SkinnedAabbDebugPlugin},
-    dev::{random_vec3_snorm, spawn_random_mesh, update_random_meshes},
+    dev::{create_and_spawn_random_mesh, random_vec3_snorm, update_random_meshes},
     SkinnedAabbPlugin,
 };
 use rand::SeedableRng;
@@ -139,11 +139,11 @@ fn spawn_random_meshes(
 
         let mesh_transform = Transform::from_translation(random_vec3_snorm(&mut rng));
 
-        if let Ok(entity) = spawn_random_mesh(
-            &mut rng,
+        if let Ok(entity) = create_and_spawn_random_mesh(
             &mut commands,
             &mut mesh_assets,
             &mut inverse_bindposes_assets,
+            &mut rng,
             base_entity,
             mesh_transform,
             mesh_instance.num_tris,

@@ -4,7 +4,7 @@
 // examples. It's not intended to be used by anything outside the crate.
 
 use crate::{JointIndex, MAX_INFLUENCES};
-use bevy_asset::{Assets, RenderAssetUsages};
+use bevy_asset::{Assets, Handle, RenderAssetUsages};
 use bevy_ecs::{
     component::Component,
     entity::Entity,
@@ -185,6 +185,56 @@ fn create_random_mesh<R: Rng + ?Sized>(
     .with_inserted_attribute(Mesh::ATTRIBUTE_JOINT_WEIGHT, joint_weights))
 }
 
+fn create_random_inverse_bindposes<R: Rng + ?Sized>(
+    rng: &mut R,
+    num_joints: usize,
+) -> SkinnedMeshInverseBindposes {
+    let random_transform_iter = repeat_with(|| random_transform(rng).compute_matrix());
+
+    // Leave the root as identity so it's more visually pleasing.
+
+    SkinnedMeshInverseBindposes::from(
+        once(Mat4::IDENTITY)
+            .chain(random_transform_iter)
+            .take(num_joints)
+            .collect::<Vec<_>>(),
+    )
+}
+
+pub struct SkinnedMeshAssets {
+    mesh: Handle<Mesh>,
+    inverse_bindposes: Handle<SkinnedMeshInverseBindposes>,
+    num_joints: usize,
+}
+
+pub fn create_random_skinned_mesh_assets<R: Rng + ?Sized>(
+    mesh_assets: &mut Assets<Mesh>,
+    inverse_bindposes_assets: &mut Assets<SkinnedMeshInverseBindposes>,
+    rng: &mut R,
+    num_tris: usize,
+    num_unskinned_joints: usize,
+    num_skinned_joints: usize,
+    max_influences: Option<usize>,
+) -> Result<SkinnedMeshAssets, RandomMeshError> {
+    let num_joints = num_unskinned_joints + num_skinned_joints;
+
+    let mesh = mesh_assets.add(create_random_mesh(
+        rng,
+        num_tris,
+        num_unskinned_joints,
+        num_skinned_joints,
+        max_influences,
+    )?);
+    let inverse_bindposes =
+        inverse_bindposes_assets.add(create_random_inverse_bindposes(rng, num_joints));
+
+    Ok(SkinnedMeshAssets {
+        mesh,
+        inverse_bindposes,
+        num_joints,
+    })
+}
+
 // Hash a single value.
 fn hash<T: Hash>(v: T) -> u64 {
     let mut hasher = DefaultHasher::new();
@@ -231,40 +281,15 @@ impl RandomMeshAnimation {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-pub fn spawn_random_mesh<R: Rng + ?Sized>(
-    rng: &mut R,
+pub fn spawn_joints<R: Rng + ?Sized>(
     commands: &mut Commands,
-    mesh_assets: &mut Assets<Mesh>,
-    inverse_bindposes_assets: &mut Assets<SkinnedMeshInverseBindposes>,
+    rng: &mut R,
     base: Entity,
-    transform: Transform,
-    num_tris: usize,
-    num_skinned_joints: usize,
-    max_influences: Option<usize>,
-) -> Result<Entity, RandomMeshError> {
-    let num_joints = 1 + num_skinned_joints;
+    num: usize,
+) -> Vec<Entity> {
+    assert!(num > 0);
 
-    let mesh_handle = mesh_assets.add(create_random_mesh(
-        rng,
-        num_tris,
-        1,
-        num_skinned_joints,
-        max_influences,
-    )?);
-
-    // Create random inverse bindposes, but leave the root as identity so it's more visually pleasing.
-
-    let random_transform_iter = repeat_with(|| random_transform(rng).compute_matrix());
-
-    let inverse_bindposes: Vec<Mat4> = once(Mat4::IDENTITY)
-        .chain(random_transform_iter)
-        .take(num_joints)
-        .collect();
-
-    let inverse_bindposes_handle = inverse_bindposes_assets.add(inverse_bindposes);
-
-    let mut joints: Vec<Entity> = Vec::with_capacity(num_skinned_joints + 1);
+    let mut joints: Vec<Entity> = Vec::with_capacity(num);
 
     let root_joint = commands
         .spawn((Transform::IDENTITY, RandomMeshAnimation::new(rng.gen())))
@@ -273,7 +298,7 @@ pub fn spawn_random_mesh<R: Rng + ?Sized>(
 
     joints.push(root_joint);
 
-    for _ in 0..num_skinned_joints {
+    for _ in 1..num {
         let joint = commands
             .spawn((Transform::IDENTITY, RandomMeshAnimation::new(rng.gen())))
             .set_parent(root_joint)
@@ -282,17 +307,58 @@ pub fn spawn_random_mesh<R: Rng + ?Sized>(
         joints.push(joint);
     }
 
-    Ok(commands
+    joints
+}
+
+pub fn spawn_random_skinned_mesh<R: Rng + ?Sized>(
+    commands: &mut Commands,
+    rng: &mut R,
+    base: Entity,
+    transform: Transform,
+    assets: &SkinnedMeshAssets,
+) -> Entity {
+    let joints = spawn_joints(commands, rng, base, assets.num_joints);
+
+    commands
         .spawn((
             transform,
-            Mesh3d(mesh_handle),
+            Mesh3d(assets.mesh.clone()),
             SkinnedMesh {
-                inverse_bindposes: inverse_bindposes_handle,
+                inverse_bindposes: assets.inverse_bindposes.clone(),
                 joints,
             },
         ))
         .set_parent(base)
-        .id())
+        .id()
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn create_and_spawn_random_mesh<R: Rng + ?Sized>(
+    commands: &mut Commands,
+    mesh_assets: &mut Assets<Mesh>,
+    inverse_bindposes_assets: &mut Assets<SkinnedMeshInverseBindposes>,
+    rng: &mut R,
+    base: Entity,
+    transform: Transform,
+    num_tris: usize,
+    num_skinned_joints: usize,
+    max_influences: Option<usize>,
+) -> Result<Entity, RandomMeshError> {
+    let num_unskinned_joints = 1;
+
+    let assets = create_random_skinned_mesh_assets(
+        mesh_assets,
+        inverse_bindposes_assets,
+        rng,
+        num_tris,
+        num_unskinned_joints,
+        num_skinned_joints,
+        max_influences,
+    )?;
+
+    Ok(spawn_random_skinned_mesh(
+        commands, rng, base, transform, &assets,
+    ))
 }
 
 pub fn update_random_meshes(

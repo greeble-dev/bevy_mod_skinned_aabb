@@ -2,7 +2,8 @@ use bevy_asset::Assets;
 use bevy_ecs::{prelude::*, system::FunctionSystem};
 use bevy_mesh::{skinning::SkinnedMeshInverseBindposes, Mesh};
 use bevy_mod_skinned_aabb::{
-    create_skinned_aabbs, dev::spawn_random_mesh, update_skinned_aabbs_nonpar, SkinnedAabbAsset,
+    create_skinned_aabbs, dev::create_and_spawn_random_mesh, update_skinned_aabbs_nonpar,
+    SkinnedAabbAsset,
 };
 use bevy_render::primitives::Aabb;
 use bevy_tasks::{ComputeTaskPool, TaskPool};
@@ -46,11 +47,11 @@ fn create_meshes(
     let base_entity = commands.spawn(Transform::IDENTITY).id();
 
     for _ in 0..NUM_MESHES {
-        if let Ok(entity) = spawn_random_mesh(
-            &mut rng,
+        if let Ok(entity) = create_and_spawn_random_mesh(
             &mut commands,
             &mut mesh_assets,
             &mut inverse_bindposes_assets,
+            &mut rng,
             base_entity,
             Transform::IDENTITY,
             NUM_TRIS,
