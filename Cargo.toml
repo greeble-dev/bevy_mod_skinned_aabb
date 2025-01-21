@@ -88,5 +88,5 @@ name = "random"
 name = "showcase"
 
 [[bench]]
-name = "bench"
+name = "benches"
 harness = false
