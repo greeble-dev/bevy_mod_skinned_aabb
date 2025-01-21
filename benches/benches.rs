@@ -59,15 +59,15 @@ fn create_meshes(
 }
 
 fn bench_internal(b: &mut Bencher, settings: SkinnedAabbSettings, mesh_params: &MeshParams) {
-    let mut world = create_dev_world(settings);
+    let world = &mut create_dev_world(settings);
 
     world.insert_resource(*mesh_params);
 
-    init_and_run_system(create_meshes, &mut world);
-    init_and_run_system(create_skinned_aabbs, &mut world);
+    init_and_run_system(create_meshes, world);
+    init_and_run_system(create_skinned_aabbs, world);
 
-    let mut update_system = init_system(update_skinned_aabbs, &mut world);
-    b.iter(move || update_system.run((), &mut world));
+    let mut update_system = init_system(update_skinned_aabbs, world);
+    b.iter(move || update_system.run((), world));
 }
 
 pub fn bench(c: &mut Criterion) {

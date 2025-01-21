@@ -10,16 +10,16 @@ use bevy_mod_skinned_aabb::{
 
 #[test]
 fn test() {
-    let mut world = create_dev_world(SkinnedAabbSettings::default());
+    let world = &mut create_dev_world(SkinnedAabbSettings::default());
 
-    init_and_run_system(spawn_random_mesh_selection, &mut world);
-    init_and_run_system(create_skinned_aabbs, &mut world);
+    init_and_run_system(spawn_random_mesh_selection, world);
+    init_and_run_system(create_skinned_aabbs, world);
 
-    let mut update_system = init_system(update_skinned_aabbs, &mut world);
-    let mut animation_system = init_system(update_random_mesh_animations, &mut world);
+    let mut update_system = init_system(update_skinned_aabbs, world);
+    let mut animation_system = init_system(update_random_mesh_animations, world);
 
     for _ in 0..10 {
-        update_system.run((), &mut world);
-        animation_system.run((), &mut world);
+        update_system.run((), world);
+        animation_system.run((), world);
     }
 }
