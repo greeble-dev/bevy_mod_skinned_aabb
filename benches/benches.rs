@@ -76,42 +76,76 @@ pub fn bench(c: &mut Criterion) {
     group.warm_up_time(Duration::from_millis(100));
     group.measurement_time(Duration::from_millis(1000));
 
+    struct Combo {
+        num_joints_total: usize,
+        num_meshes: usize,
+    }
+
+    let combos = [
+        Combo {
+            num_joints_total: 1_000,
+            num_meshes: 100,
+        },
+        Combo {
+            num_joints_total: 10_000,
+            num_meshes: 100,
+        },
+        Combo {
+            num_joints_total: 10_000,
+            num_meshes: 1_000,
+        },
+        Combo {
+            num_joints_total: 100_000,
+            num_meshes: 1_000,
+        },
+        Combo {
+            num_joints_total: 100_000,
+            num_meshes: 10_000,
+        },
+        Combo {
+            num_joints_total: 1_000_000,
+            num_meshes: 10_000,
+        },
+    ];
+
+    let num_assets = 10;
+
     for parallel in [false, true] {
-        for num_assets in [1, 100] {
-            for num_joints_total in [1_000, 10_000, 100_000, 1_000_000] {
-                group.sample_size(if num_joints_total >= 100_000 { 10 } else { 50 });
-                group.throughput(Throughput::Elements(num_joints_total as u64));
+        for &Combo {
+            num_joints_total,
+            num_meshes,
+        } in &combos
+        {
+            group.sample_size(if num_joints_total >= 100_000 { 10 } else { 50 });
+            group.throughput(Throughput::Elements(num_joints_total as u64));
 
-                for num_meshes in [10_000, 1_000, 100, 10] {
-                    if num_joints_total < num_meshes {
-                        continue;
-                    }
+            if num_joints_total < num_meshes {
+                continue;
+            }
 
-                    assert!((num_joints_total % num_meshes) == 0);
+            assert!((num_joints_total % num_meshes) == 0);
 
-                    let num_joints = num_joints_total / num_meshes;
+            let num_joints = num_joints_total / num_meshes;
 
-                    // TODO: Correct constant?
-                    if num_joints >= 255 {
-                        continue;
-                    }
+            // TODO: Correct constant?
+            if num_joints >= 255 {
+                continue;
+            }
 
-                    let name = format!(
+            let name = format!(
                         "(parallel = {}, assets = {}, joints total = {}, joints per mesh = {}, meshes = {})",
                         parallel, num_assets, num_joints_total, num_joints, num_meshes,
                     );
 
-                    let mesh_params = MeshParams {
-                        num_assets,
-                        num_meshes,
-                        num_joints,
-                    };
+            let mesh_params = MeshParams {
+                num_assets,
+                num_meshes,
+                num_joints,
+            };
 
-                    let settings = SkinnedAabbSettings { parallel };
+            let settings = SkinnedAabbSettings { parallel };
 
-                    group.bench_function(name, |b| bench_internal(b, settings, &mesh_params));
-                }
-            }
+            group.bench_function(name, |b| bench_internal(b, settings, &mesh_params));
         }
     }
 
