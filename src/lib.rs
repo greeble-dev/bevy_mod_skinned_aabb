@@ -54,6 +54,12 @@ pub struct SkinnedAabbSettings {
     pub parallel: bool,
 }
 
+impl Default for SkinnedAabbSettings {
+    fn default() -> Self {
+        SkinnedAabbSettings { parallel: true }
+    }
+}
+
 // Match the Mesh limits on joint indices (ATTRIBUTE_JOINT_INDEX = VertexFormat::Uint16x4)
 pub type JointIndex = u16;
 

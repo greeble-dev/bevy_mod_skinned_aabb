@@ -3,12 +3,16 @@
 // This module is public so that it can be used by the crate's tests and
 // examples. It's not intended to be used by anything outside the crate.
 
-use crate::{JointIndex, MAX_INFLUENCES};
+use crate::{JointIndex, SkinnedAabbAsset, SkinnedAabbSettings, MAX_INFLUENCES};
 use bevy_asset::{Assets, Handle, RenderAssetUsages};
+use bevy_color::Color;
 use bevy_ecs::{
     component::Component,
     entity::Entity,
-    system::{Commands, Query, Res},
+    system::{
+        Commands, FunctionSystem, IntoSystem, Query, Res, ResMut, System, SystemParamFunction,
+    },
+    world::World,
 };
 use bevy_hierarchy::BuildChildren;
 use bevy_math::{
@@ -16,13 +20,16 @@ use bevy_math::{
     ops, Mat4, Quat, Vec3,
 };
 use bevy_mesh::Mesh;
+use bevy_pbr::{MeshMaterial3d, StandardMaterial};
 use bevy_render::{
     mesh::{
         skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
         Mesh3d, PrimitiveTopology, VertexAttributeValues,
     },
     primitives::Aabb,
+    view::visibility::Visibility,
 };
+use bevy_tasks::{ComputeTaskPool, TaskPool};
 use bevy_time::{Time, Virtual};
 use bevy_transform::components::Transform;
 use rand::{
@@ -30,7 +37,7 @@ use rand::{
     Rng, RngCore, SeedableRng,
 };
 use rand_chacha::ChaCha8Rng;
-use std::borrow::Borrow;
+use std::{borrow::Borrow, time::Duration};
 use std::{
     f32::consts::TAU,
     hash::{DefaultHasher, Hash, Hasher},
@@ -417,7 +424,86 @@ pub fn create_and_spawn_random_skinned_mesh(
     ))
 }
 
-pub fn update_random_meshes(
+pub fn spawn_random_mesh_selection(
+    mut commands: Commands,
+    mut mesh_assets: ResMut<Assets<Mesh>>,
+    mut material_assets: ResMut<Assets<StandardMaterial>>,
+    mut inverse_bindposes_assets: ResMut<Assets<SkinnedMeshInverseBindposes>>,
+) {
+    let mut rng = ChaCha8Rng::seed_from_u64(732935);
+
+    let material = MeshMaterial3d(material_assets.add(StandardMaterial {
+        base_color: Color::WHITE,
+        cull_mode: None,
+        ..Default::default()
+    }));
+
+    struct MeshInstance {
+        mesh_type: RandomSkinnedMeshType,
+        num_joints: usize,
+        translation: Vec3,
+    }
+
+    let mesh_instances = [
+        MeshInstance {
+            mesh_type: RandomSkinnedMeshType::Hard,
+            num_joints: 1,
+            translation: Vec3::new(-3.0, 1.5, 0.0),
+        },
+        MeshInstance {
+            mesh_type: RandomSkinnedMeshType::Hard,
+            num_joints: 20,
+            translation: Vec3::new(0.0, 1.5, 0.0),
+        },
+        MeshInstance {
+            mesh_type: RandomSkinnedMeshType::Hard,
+            num_joints: 200,
+            translation: Vec3::new(3.0, 1.5, 0.0),
+        },
+        MeshInstance {
+            mesh_type: RandomSkinnedMeshType::Soft { num_tris: 100 },
+            num_joints: 1,
+            translation: Vec3::new(-3.0, -1.5, 0.0),
+        },
+        MeshInstance {
+            mesh_type: RandomSkinnedMeshType::Soft { num_tris: 100 },
+            num_joints: 20,
+            translation: Vec3::new(0.0, -1.5, 0.0),
+        },
+        MeshInstance {
+            mesh_type: RandomSkinnedMeshType::Soft { num_tris: 1000 },
+            num_joints: 200,
+            translation: Vec3::new(3.0, -1.5, 0.0),
+        },
+    ];
+
+    for mesh_instance in mesh_instances {
+        // Create a base entity. This will be the parent of the mesh and the joints.
+
+        let base_transform = Transform::from_translation(mesh_instance.translation);
+        let base_entity = commands.spawn((base_transform, Visibility::default())).id();
+
+        // Give the mesh entity a random translation. This ensures we're not depending on the
+        // mesh having the same transform as the root joint.
+
+        let mesh_transform = Transform::from_translation(random_vec3_snorm(&mut rng));
+
+        if let Ok(entity) = create_and_spawn_random_skinned_mesh(
+            &mut commands,
+            &mut mesh_assets,
+            &mut inverse_bindposes_assets,
+            &mut rng,
+            base_entity,
+            mesh_transform,
+            mesh_instance.mesh_type,
+            mesh_instance.num_joints,
+        ) {
+            commands.entity(entity).insert(material.clone());
+        }
+    }
+}
+
+pub fn update_random_mesh_animations(
     mut query: Query<(&mut Transform, &RandomMeshAnimation)>,
     time: Res<Time<Virtual>>,
 ) {
@@ -441,4 +527,44 @@ pub fn update_random_meshes(
             scale: t0.scale.lerp(t1.scale, alpha),
         };
     }
+}
+
+pub fn init_system<M, F>(func: F, world: &mut World) -> FunctionSystem<M, F>
+where
+    M: 'static,
+    F: SystemParamFunction<M>,
+{
+    let mut system = IntoSystem::into_system(func);
+    system.initialize(world);
+    system.update_archetype_component_access(world.as_unsafe_world_cell());
+
+    system
+}
+
+pub fn init_and_run_system<M, F>(func: F, world: &mut World)
+where
+    M: 'static,
+    F: SystemParamFunction<M, In = ()>,
+{
+    init_system(func, world).run((), world);
+}
+
+pub fn create_dev_world(settings: SkinnedAabbSettings) -> World {
+    ComputeTaskPool::get_or_init(TaskPool::default);
+
+    let mut world = World::default();
+
+    world.init_resource::<Assets<Mesh>>();
+    world.init_resource::<Assets<SkinnedMeshInverseBindposes>>();
+    world.init_resource::<Assets<SkinnedAabbAsset>>();
+    world.init_resource::<Assets<StandardMaterial>>();
+
+    world.insert_resource(settings);
+
+    let mut time = Time::<Virtual>::default();
+    time.advance_by(Duration::from_secs(1));
+
+    world.insert_resource(time);
+
+    world
 }

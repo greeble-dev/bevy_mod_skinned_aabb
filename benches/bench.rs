@@ -1,38 +1,20 @@
 use bevy_asset::Assets;
-use bevy_ecs::{prelude::*, system::FunctionSystem};
+use bevy_ecs::prelude::*;
 use bevy_mesh::{skinning::SkinnedMeshInverseBindposes, Mesh};
 use bevy_mod_skinned_aabb::{
     create_skinned_aabbs,
-    dev::{create_random_skinned_mesh_assets, spawn_random_skinned_mesh, RandomSkinnedMeshType},
-    update_skinned_aabbs, SkinnedAabbAsset, SkinnedAabbSettings,
+    dev::{
+        create_dev_world, create_random_skinned_mesh_assets, init_and_run_system, init_system,
+        spawn_random_skinned_mesh, RandomSkinnedMeshType,
+    },
+    update_skinned_aabbs, SkinnedAabbSettings,
 };
-use bevy_tasks::{ComputeTaskPool, TaskPool};
 use bevy_transform::prelude::*;
 use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Bencher, Criterion, Throughput};
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use std::iter::repeat_with;
-
-fn init_system<M, F>(func: F, world: &mut World) -> FunctionSystem<M, F>
-where
-    M: 'static,
-    F: SystemParamFunction<M>,
-{
-    let mut system = IntoSystem::into_system(func);
-    system.initialize(world);
-    system.update_archetype_component_access(world.as_unsafe_world_cell());
-
-    system
-}
-
-fn init_and_run_system<M, F>(func: F, world: &mut World)
-where
-    M: 'static,
-    F: SystemParamFunction<M, In = ()>,
-{
-    init_system(func, world).run((), world);
-}
 
 #[derive(Resource, Copy, Clone)]
 struct MeshParams {
@@ -76,16 +58,10 @@ fn create_meshes(
     }
 }
 
-fn bench_internal(b: &mut Bencher, settings: &SkinnedAabbSettings, mesh_params: &MeshParams) {
-    ComputeTaskPool::get_or_init(TaskPool::default);
+fn bench_internal(b: &mut Bencher, settings: SkinnedAabbSettings, mesh_params: &MeshParams) {
+    let mut world = create_dev_world(settings);
 
-    let mut world = World::default();
-
-    world.init_resource::<Assets<Mesh>>();
-    world.init_resource::<Assets<SkinnedMeshInverseBindposes>>();
-    world.init_resource::<Assets<SkinnedAabbAsset>>();
     world.insert_resource(*mesh_params);
-    world.insert_resource(*settings);
 
     init_and_run_system(create_meshes, &mut world);
     init_and_run_system(create_skinned_aabbs, &mut world);
@@ -133,7 +109,7 @@ pub fn bench(c: &mut Criterion) {
 
                     let settings = SkinnedAabbSettings { parallel };
 
-                    group.bench_function(name, |b| bench_internal(b, &settings, &mesh_params));
+                    group.bench_function(name, |b| bench_internal(b, settings, &mesh_params));
                 }
             }
         }

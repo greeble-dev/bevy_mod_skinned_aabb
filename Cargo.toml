@@ -26,6 +26,7 @@ bevy_transform = { version = "0.15", default-features = false }
 bevy_hierarchy = { version = "0.15", optional = true }
 bevy_time = { version = "0.15", optional = true }
 bevy_tasks = { version = "0.15", optional = true }
+bevy_pbr = { version = "0.15", optional = true }
 rand = { version = "0.8", optional = true }
 rand_chacha = { version = "0.3", optional = true }
 rand_core = { version = "0.6", optional = true }
@@ -71,6 +72,7 @@ dev = [
 	"dep:bevy_hierarchy",
 	"dep:bevy_time",
 	"dep:bevy_tasks",
+	"dep:bevy_pbr",
 	"dep:rand",
 	"dep:rand_chacha",
 	"dep:rand_core",
