@@ -32,6 +32,8 @@ jobs:
               run: sudo apt-get install -yq --no-install-recommends libudev-dev libasound2-dev libxcb-composite0-dev
             - name: Run cargo check
               run: cargo check --all-features --all-targets
+            - name: Run cargo test
+              run: cargo test --all-targets
 
     lints:
         name: Lints
