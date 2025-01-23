@@ -17,9 +17,9 @@ use bevy_ecs::{
 use bevy_hierarchy::BuildChildren;
 use bevy_math::{
     curve::{Curve, EaseFunction, EasingCurve},
-    ops, Mat4, Quat, Vec3,
+    ops, Affine3A, Mat4, Quat, Vec3,
 };
-use bevy_mesh::Mesh;
+use bevy_mesh::{Mesh, MeshVertexAttributeId};
 use bevy_pbr::{MeshMaterial3d, StandardMaterial};
 use bevy_render::{
     mesh::{
@@ -31,7 +31,7 @@ use bevy_render::{
 };
 use bevy_tasks::{ComputeTaskPool, TaskPool};
 use bevy_time::{Time, Virtual};
-use bevy_transform::components::Transform;
+use bevy_transform::components::{GlobalTransform, Transform};
 use rand::{
     distributions::{Distribution, Slice, Uniform},
     Rng, RngCore, SeedableRng,
@@ -567,4 +567,142 @@ pub fn create_dev_world(settings: SkinnedAabbSettings) -> World {
     world.insert_resource(time);
 
     world
+}
+
+pub enum SkinError {
+    MismatchedArrayLengths,
+    InvalidJointIndex,
+    UnknownLayout,
+    TODO,
+}
+
+fn skin_positions(
+    positions: &VertexAttributeValues,
+    joint_indices: &[[u16; 4]],
+    joint_weights: &[[f32; 4]],
+    skinning_transforms: &[Mat4],
+) -> Result<Vec<[f32; 3]>, SkinError> {
+    let VertexAttributeValues::Float32x3(positions) = positions else {
+        return Err(SkinError::UnknownLayout);
+    };
+
+    let mut out = vec![[0.0f32, 0.0f32, 0.0f32]; positions.len()];
+
+    for (vertex_index, position) in positions.iter().enumerate() {
+        let vertex_joint_indices = joint_indices.get(vertex_index).ok_or(SkinError::TODO)?;
+        let vertex_joint_weights = joint_weights.get(vertex_index).ok_or(SkinError::TODO)?;
+
+        let mut vertex_skinning_transforms = [Mat4::IDENTITY; 4];
+
+        for influence_index in 0..4 {
+            let w = vertex_joint_weights[influence_index];
+            let t = *skinning_transforms
+                .get(vertex_joint_indices[influence_index] as usize)
+                .ok_or(SkinError::TODO)?;
+
+            vertex_skinning_transforms[influence_index] = w * t;
+        }
+
+        let skinning_transform = vertex_skinning_transforms.iter().sum::<Mat4>();
+
+        let skinned_position =
+            <[f32; 3]>::from(skinning_transform.transform_point3(Vec3::from_slice(position)));
+
+        out[vertex_index] = skinned_position;
+    }
+
+    Ok(out)
+}
+
+fn skin_internal(
+    mesh: &Mesh,
+    inverse_bindposes: &[Mat4],
+    joints: &[Affine3A],
+) -> Result<Mesh, SkinError> {
+    if joints.len() != inverse_bindposes.len() {
+        return Err(SkinError::MismatchedArrayLengths);
+    }
+
+    let Some(VertexAttributeValues::Uint16x4(joint_indices)) =
+        mesh.attribute(Mesh::ATTRIBUTE_JOINT_INDEX)
+    else {
+        return Err(SkinError::UnknownLayout);
+    };
+
+    let Some(VertexAttributeValues::Float32x4(joint_weights)) =
+        mesh.attribute(Mesh::ATTRIBUTE_JOINT_WEIGHT)
+    else {
+        return Err(SkinError::UnknownLayout);
+    };
+
+    if joints.len() != inverse_bindposes.len() {
+        return Err(SkinError::TODO);
+    }
+
+    let skinning_transforms = joints
+        .iter()
+        .zip(inverse_bindposes.iter())
+        .map(|(joint, inverse_bindpose)| Mat4::from(*joint) * *inverse_bindpose) // TODO: Should this be Mat4? Or keep Affine3A through skinning?
+        .collect::<Vec<_>>();
+
+    // TODO: Awkward? Appears needed since match patterns can't be expressions.
+    const JOINT_INDEX_ID: MeshVertexAttributeId = Mesh::ATTRIBUTE_JOINT_INDEX.id;
+    const JOINT_WEIGHT_ID: MeshVertexAttributeId = Mesh::ATTRIBUTE_JOINT_WEIGHT.id;
+    const POSITION_ID: MeshVertexAttributeId = Mesh::ATTRIBUTE_POSITION.id;
+
+    let mut out = Mesh::new(mesh.primitive_topology(), mesh.asset_usage);
+
+    for (attribute, values) in mesh.attributes() {
+        match attribute.id {
+            JOINT_INDEX_ID => (),
+            JOINT_WEIGHT_ID => (),
+
+            POSITION_ID => {
+                out.insert_attribute(
+                    *attribute,
+                    skin_positions(values, joint_indices, joint_weights, &skinning_transforms)?,
+                );
+            }
+
+            _ => out.insert_attribute(*attribute, values.clone()),
+        }
+    }
+
+    Ok(out)
+}
+
+fn try_entity_from_joint(
+    joints: &Query<&GlobalTransform>,
+    entity: Entity,
+    entity_from_world: Affine3A,
+) -> Option<Affine3A> {
+    let world_from_joint = joints.get(entity).ok()?.affine();
+
+    Some(entity_from_world * world_from_joint)
+}
+
+pub fn skin(
+    mesh: &Mesh3d,
+    skinned_mesh: &SkinnedMesh,
+    world_from_entity: &Affine3A,
+    mesh_assets: &Assets<Mesh>,
+    inverse_bindposes_assets: &Assets<SkinnedMeshInverseBindposes>,
+    joint_transforms: &Query<&GlobalTransform>,
+) -> Result<Mesh, SkinError> {
+    let entity_from_world = world_from_entity.inverse();
+
+    let entity_from_joints = skinned_mesh
+        .joints
+        .iter()
+        .map(|&entity| try_entity_from_joint(joint_transforms, entity, entity_from_world))
+        .collect::<Option<Vec<_>>>()
+        .ok_or(SkinError::TODO)?;
+
+    let inverse_bindposes_asset = inverse_bindposes_assets
+        .get(&skinned_mesh.inverse_bindposes)
+        .ok_or(SkinError::TODO)?;
+
+    let mesh_asset = mesh_assets.get(&mesh.0).ok_or(SkinError::TODO)?;
+
+    skin_internal(mesh_asset, inverse_bindposes_asset, &entity_from_joints)
 }
