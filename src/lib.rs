@@ -290,9 +290,9 @@ fn create_skinned_aabb_asset(
 
 fn create_skinned_aabb_component(
     skinned_aabb_assets: &mut ResMut<Assets<SkinnedAabbAsset>>,
-    mesh_assets: &Res<Assets<Mesh>>,
+    mesh_assets: &Assets<Mesh>,
     mesh_handle: &Handle<Mesh>,
-    inverse_bindposes_assets: &Res<Assets<SkinnedMeshInverseBindposes>>,
+    inverse_bindposes_assets: &Assets<SkinnedMeshInverseBindposes>,
     inverse_bindposes_handle: &Handle<SkinnedMeshInverseBindposes>,
 ) -> SkinnedAabb {
     // First check for an existing asset.
@@ -431,7 +431,7 @@ fn aabb_transformed_by(input: Aabb3d, transform: Affine3A) -> Aabb3d {
 fn get_skinned_aabb(
     component: &SkinnedAabb,
     joints: &Query<&GlobalTransform>,
-    assets: &Res<Assets<SkinnedAabbAsset>>,
+    assets: &Assets<SkinnedAabbAsset>,
     skinned_mesh: &SkinnedMesh,
     world_from_entity: &GlobalTransform,
 ) -> Option<Aabb> {
