@@ -17,6 +17,10 @@ fn test_against_cpu_skinning(
     inverse_bindposes_assets: Res<Assets<SkinnedMeshInverseBindposes>>,
     mesh_assets: Res<Assets<Mesh>>,
 ) {
+    // Assert that at least some skinned meshes exist with our expected
+    // components.
+    assert!(query.iter().count() > 0);
+
     for (mesh, skinned_mesh, transform, aabb) in query.iter() {
         if let Ok(cpu_skinned_mesh) = skin(
             mesh,
