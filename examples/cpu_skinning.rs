@@ -1,9 +1,9 @@
-use bevy::{prelude::*, scene::SceneInstanceReady};
+use bevy::prelude::*;
 use bevy_mesh::skinning::{SkinnedMesh, SkinnedMeshInverseBindposes};
-use bevy_mod_skinned_aabb::dev::skin;
-use bevy_render::primitives::Aabb;
-
-const GLTF_PATH: &str = "Fox.glb";
+use bevy_mod_skinned_aabb::dev::{
+    skin, spawn_random_mesh_selection, update_random_mesh_animations,
+};
+use bevy_render::{camera::ScalingMode, primitives::Aabb};
 
 fn main() {
     App::new()
@@ -12,8 +12,9 @@ fn main() {
             brightness: 2000.,
         })
         .add_plugins(DefaultPlugins)
-        .add_systems(Startup, setup_mesh_and_animation)
-        .add_systems(Startup, setup_camera_and_environment)
+        .add_systems(Startup, setup)
+        .add_systems(Startup, spawn_random_mesh_selection)
+        .add_systems(Update, update_random_mesh_animations)
         .add_systems(Update, cpu_skinning_delete_existing)
         /*
         // TODO: Why doesn't this work? Would avoid us being a frame behind.
@@ -26,66 +27,29 @@ fn main() {
         */
         .add_systems(
             Update,
-            cpu_skinning_spawn_new.after(cpu_skinning_delete_existing),
+            cpu_skinning_spawn_new
+                .after(cpu_skinning_delete_existing)
+                .before(update_random_mesh_animations),
         )
         .run();
 }
 
-#[derive(Component)]
-struct AnimationToPlay {
-    graph_handle: Handle<AnimationGraph>,
-    index: AnimationNodeIndex,
+fn setup(mut commands: Commands) {
+    commands.spawn((
+        Camera3d::default(),
+        Projection::Orthographic(OrthographicProjection {
+            scaling_mode: ScalingMode::AutoMin {
+                min_width: 16.0 * 1.1,
+                min_height: 9.0 * 1.1,
+            },
+            ..OrthographicProjection::default_3d()
+        }),
+        Transform::from_xyz(4.0, 0.0, 12.0).looking_at(Vec3::new(4.0, 0.0, 0.0), Vec3::Y),
+    ));
 }
 
 #[derive(Component, Default)]
 struct CpuSkinningMarker;
-
-fn setup_mesh_and_animation(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut graphs: ResMut<Assets<AnimationGraph>>,
-) {
-    let (graph, index) = AnimationGraph::from_clip(
-        asset_server.load(GltfAssetLabel::Animation(2).from_asset(GLTF_PATH)),
-    );
-
-    let graph_handle = graphs.add(graph);
-
-    let animation_to_play = AnimationToPlay {
-        graph_handle,
-        index,
-    };
-
-    let mesh_scene = SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset(GLTF_PATH)));
-
-    commands
-        .spawn((
-            animation_to_play,
-            mesh_scene,
-            Transform::from_xyz(-30.0, 0.0, 0.0),
-        ))
-        .observe(play_animation_when_ready);
-}
-
-fn play_animation_when_ready(
-    trigger: Trigger<SceneInstanceReady>,
-    mut commands: Commands,
-    children: Query<&Children>,
-    animations_to_play: Query<&AnimationToPlay>,
-    mut players: Query<&mut AnimationPlayer>,
-) {
-    if let Ok(animation_to_play) = animations_to_play.get(trigger.entity()) {
-        for child in children.iter_descendants(trigger.entity()) {
-            if let Ok(mut player) = players.get_mut(child) {
-                player.play(animation_to_play.index).repeat();
-
-                commands
-                    .entity(child)
-                    .insert(AnimationGraphHandle(animation_to_play.graph_handle.clone()));
-            }
-        }
-    }
-}
 
 fn cpu_skinning_delete_existing(
     mut commands: Commands,
@@ -109,8 +73,6 @@ fn cpu_skinning_spawn_new(
     inverse_bindposes_assets: Res<Assets<SkinnedMeshInverseBindposes>>,
     mut mesh_assets: ResMut<Assets<Mesh>>,
 ) {
-    let cpu_skinned_transform = Transform::from_xyz(30.0, 0.0, 0.0);
-
     for (mesh, skinned_mesh, transform, aabb, material) in query.iter() {
         let Ok(cpu_skinned_mesh) = skin(
             mesh,
@@ -123,21 +85,15 @@ fn cpu_skinning_spawn_new(
             continue;
         };
 
+        let cpu_skinned_transform = Transform::from_xyz(8.0, 0.0, 0.0) * *transform;
         let cpu_skinned_mesh_asset = Mesh3d(mesh_assets.add(cpu_skinned_mesh));
 
         commands.spawn((
             cpu_skinned_mesh_asset,
             material.clone(),
             *aabb,
-            cpu_skinned_transform,
+            Transform::from(cpu_skinned_transform),
             CpuSkinningMarker,
         ));
     }
-}
-
-fn setup_camera_and_environment(mut commands: Commands) {
-    commands.spawn((
-        Camera3d::default(),
-        Transform::from_xyz(0.0, 100.0, 150.0).looking_at(Vec3::new(0.0, 30.0, 0.0), Vec3::Y),
-    ));
 }
