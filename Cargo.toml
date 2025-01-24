@@ -23,13 +23,13 @@ bevy_render = { version = "0.15", default-features = false }
 bevy_transform = { version = "0.15", default-features = false }
 
 # Dependencies used by the crate's internal tests and examples.
-bevy_hierarchy = { version = "0.15", optional = true }
-bevy_time = { version = "0.15", optional = true }
-bevy_tasks = { version = "0.15", optional = true }
-bevy_pbr = { version = "0.15", optional = true }
-rand = { version = "0.8", optional = true }
-rand_chacha = { version = "0.3", optional = true }
-rand_core = { version = "0.6", optional = true }
+bevy_hierarchy = { version = "0.15", default-features = false, optional = true }
+bevy_time = { version = "0.15", default-features = false, optional = true }
+bevy_tasks = { version = "0.15", default-features = false, optional = true }
+bevy_pbr = { version = "0.15", default-features = false, optional = true }
+rand = { version = "0.8", default-features = false, optional = true }
+rand_chacha = { version = "0.3", default-features = false, optional = true }
+rand_core = { version = "0.6", default-features = false, optional = true }
 
 [dev-dependencies]
 bevy_mod_skinned_aabb = { path = ".", features = ["dev"] }
