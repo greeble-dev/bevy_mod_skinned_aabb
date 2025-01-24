@@ -50,7 +50,7 @@ fn test_against_cpu_skinning(
                 );
                 assert!(
                     conservative_max.cmpge(accurate_max - epsilon).all(),
-                    "Conservative maximum {conservative_max} should be be less than the accurate maximum {accurate_max}.",
+                    "Conservative maximum {conservative_max} should not be less than the accurate maximum {accurate_max}.",
                 );
             } else {
                 unreachable!("Failed to compute AABB.");
