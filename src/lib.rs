@@ -364,13 +364,10 @@ pub fn create_skinned_aabbs(
     }
 }
 
-// Scalar version of aabb_transformed_by, kept here for reference.
-//
-// Algorithm from "Transforming Axis-Aligned Bounding Boxes", James Arvo, Graphics Gems (1990).
-//
-// TODO: Benchmark against the simd version? Worth a check in case the compiler is cleverer.
+// Scalar version of aabb_transformed_by, kept here for reference. Takes roughly
+// 1.4x - 1.6x the time of the simd version.
 #[cfg(any())]
-fn aabb_transformed_by_scalar(input: Aabb3d, transform: Affine3A) -> Aabb3d {
+fn aabb_transformed_by(input: Aabb3d, transform: Affine3A) -> Aabb3d {
     let rs = transform.matrix3.to_cols_array_2d();
     let t = transform.translation;
 
@@ -391,6 +388,8 @@ fn aabb_transformed_by_scalar(input: Aabb3d, transform: Affine3A) -> Aabb3d {
 }
 
 // Return an AABB that contains the transformed input AABB.
+//
+// Algorithm from "Transforming Axis-Aligned Bounding Boxes", James Arvo, Graphics Gems (1990).
 fn aabb_transformed_by(input: Aabb3d, transform: Affine3A) -> Aabb3d {
     let rs = transform.matrix3;
     let t = transform.translation;

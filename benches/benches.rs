@@ -116,7 +116,16 @@ pub fn bench(c: &mut Criterion) {
             num_meshes,
         } in &combos
         {
-            group.sample_size(if num_joints_total >= 100_000 { 10 } else { 50 });
+            group.warm_up_time(Duration::from_millis(500));
+
+            if num_joints_total < 100_000 {
+                group.sample_size(100);
+                group.measurement_time(Duration::from_millis(500));
+            } else {
+                group.sample_size(50);
+                group.measurement_time(Duration::from_millis(2000));
+            }
+
             group.throughput(Throughput::Elements(num_joints_total as u64));
 
             if num_joints_total < num_meshes {
