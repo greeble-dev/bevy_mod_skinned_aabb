@@ -51,6 +51,8 @@ impl Plugin for SkinnedAabbPlugin {
 
 #[derive(Resource, Copy, Clone)]
 pub struct SkinnedAabbSettings {
+    // If true, the skinned AABB update will run on multiple threads. Defaults
+    // to true.
     pub parallel: bool,
 }
 
@@ -63,7 +65,8 @@ impl Default for SkinnedAabbSettings {
 // Match the Mesh limits on joint indices (ATTRIBUTE_JOINT_INDEX = VertexFormat::Uint16x4)
 pub type JointIndex = u16;
 
-// TODO: Bit janky hard-coding this here. Could petition for it to be added to bevy_pbr alongside MAX_JOINTS?
+// TODO: Bit janky hard-coding this here. Could petition for it to be added to
+// bevy_pbr alongside MAX_JOINTS?
 pub const MAX_INFLUENCES: usize = 4;
 
 // An Aabb3d without padding.
@@ -91,17 +94,23 @@ impl From<Aabb3d> for PackedAabb3d {
     }
 }
 
-#[derive(Asset, Debug, TypePath)]
-pub struct SkinnedAabbAsset {
-    // The source mesh and inverse bindpose assets. We keep these so that entities can
-    // reuse existing SkinnedAabbAssets by searching for matching source assets.
+// The assets that were used to create a `SkinnedAabbAsset`.
+#[derive(PartialEq, Eq, Debug)]
+pub struct SkinnedAabbSourceAssets {
     pub mesh: AssetId<Mesh>,
     pub inverse_bindposes: AssetId<SkinnedMeshInverseBindposes>,
+}
 
-    // Aabb for each skinned joint.
+#[derive(Asset, Debug, TypePath)]
+pub struct SkinnedAabbAsset {
+    // The source assets. We keep these so that entities can reuse existing
+    // SkinnedAabbAssets by searching for matching source assets.
+    pub source: SkinnedAabbSourceAssets,
+
+    // AABB for each skinned joint.
     pub aabbs: Box<[PackedAabb3d]>,
 
-    // Mapping from aabb index to SkinnedMesh::joints index.
+    // Mapping from `self.aabbs` index to `SkinnedMesh::joints` index.
     pub aabb_to_joint: Box<[JointIndex]>,
 }
 
@@ -138,7 +147,8 @@ pub struct SkinnedAabb {
     pub asset: Option<Handle<SkinnedAabbAsset>>,
 }
 
-// Return an aabb that contains the given point and optional aabb.
+// Return `aabb` extended to include `point`. If `aabb` is none, return the
+// AABB of `point`.
 fn merge(aabb: Option<Aabb3d>, point: Vec3A) -> Aabb3d {
     match aabb {
         Some(aabb) => Aabb3d {
@@ -239,9 +249,11 @@ fn create_skinned_aabb_asset(
 
     // TODO: Error if num_joints exceeds JointIndex limits?
 
-    // Calculate the jointspace aabb for each joint.
+    // Allocate an optional AABB for each joint.
 
     let mut optional_aabbs: Box<[Option<Aabb3d>]> = vec![None; num_joints].into_boxed_slice();
+
+    // Iterate over all influences and add the vertex position to the joint's AABB.
 
     for Influence {
         position,
@@ -263,7 +275,8 @@ fn create_skinned_aabb_asset(
         ));
     }
 
-    // Filter out any joints without an aabb.
+    // Create the final list of AABBs. This will only contain joints that had
+    // vertices skinned to them.
 
     let num_aabbs = optional_aabbs.iter().filter(|o| o.is_some()).count();
 
@@ -281,11 +294,18 @@ fn create_skinned_aabb_asset(
     assert!(aabb_to_joint.len() == num_aabbs);
 
     SkinnedAabbAsset {
-        mesh: mesh_handle,
-        inverse_bindposes: inverse_bindposes_handle,
+        source: SkinnedAabbSourceAssets {
+            mesh: mesh_handle,
+            inverse_bindposes: inverse_bindposes_handle,
+        },
         aabbs: aabbs.into(),
         aabb_to_joint: aabb_to_joint.into(),
     }
+}
+
+#[cfg(feature = "trace")]
+fn asset_handle_to_string<A: Asset>(h: &Handle<A>) -> &str {
+    h.path().and_then(|p| p.path().to_str()).unwrap_or("")
 }
 
 fn create_skinned_aabb_component(
@@ -295,60 +315,61 @@ fn create_skinned_aabb_component(
     inverse_bindposes_assets: &Assets<SkinnedMeshInverseBindposes>,
     inverse_bindposes_handle: &Handle<SkinnedMeshInverseBindposes>,
 ) -> SkinnedAabb {
-    // First check for an existing asset.
+    // First check that the source assets are valid. If not then return an empty
+    // component.
+
+    let (Some(mesh), Some(inverse_bindposes)) = (
+        mesh_assets.get(mesh_handle),
+        inverse_bindposes_assets.get(inverse_bindposes_handle),
+    ) else {
+        return SkinnedAabb { asset: None };
+    };
+
+    let source = SkinnedAabbSourceAssets {
+        mesh: mesh_handle.id(),
+        inverse_bindposes: inverse_bindposes_handle.id(),
+    };
+
+    // Check for an existing asset that matches the source assets.
     //
     // TODO: Linear search is not great if there's many assets. But in the
     // long run this should all move to the asset pipeline.
 
-    for (existing_asset_id, existing_asset) in skinned_aabb_assets.iter() {
-        if (existing_asset.mesh == mesh_handle.id())
-            & (existing_asset.inverse_bindposes == inverse_bindposes_handle.id())
-        {
-            return SkinnedAabb {
-                asset: Some(Handle::Weak(existing_asset_id)),
-            };
-        }
-    }
-
-    // No existing asset so create one.
-
-    if let (Some(mesh), Some(inverse_bindposes)) = (
-        mesh_assets.get(mesh_handle),
-        inverse_bindposes_assets.get(inverse_bindposes_handle),
-    ) {
-        // TODO: Improve Handle -> String messiness?
-        #[cfg(feature = "trace")]
-        let _span = info_span!(
-            "bevy_mod_skinned_aabb::create_skinned_aabb_asset",
-            asset = mesh_handle
-                .path()
-                .and_then(|p| p.path().to_str())
-                .unwrap_or("")
-        )
-        .entered();
-
-        let asset = create_skinned_aabb_asset(
-            mesh,
-            mesh_handle.id(),
-            inverse_bindposes,
-            inverse_bindposes_handle.id(),
-        );
-
-        let asset_handle = skinned_aabb_assets.add(asset);
-
+    if let Some((existing_asset_id, _)) = skinned_aabb_assets
+        .iter()
+        .find(|(_, candidate_asset)| candidate_asset.source == source)
+    {
         return SkinnedAabb {
-            asset: Some(asset_handle),
+            asset: Some(Handle::Weak(existing_asset_id)),
         };
     }
 
-    SkinnedAabb { asset: None }
+    // No existing asset found so create a new one.
+
+    #[cfg(feature = "trace")]
+    let _span = info_span!(
+        "bevy_mod_skinned_aabb::create_skinned_aabb_asset",
+        asset = asset_handle_to_string(mesh_handle)
+    )
+    .entered();
+
+    let asset = skinned_aabb_assets.add(create_skinned_aabb_asset(
+        mesh,
+        mesh_handle.id(),
+        inverse_bindposes,
+        inverse_bindposes_handle.id(),
+    ));
+
+    SkinnedAabb { asset: Some(asset) }
 }
 
+// If any entities have `Mesh3d` and `SkinnedMesh` components but no
+// `SkinnedAabb`, create one.
 pub fn create_skinned_aabbs(
     mut commands: Commands,
+    mut skinned_aabb_assets: ResMut<Assets<SkinnedAabbAsset>>,
     mesh_assets: Res<Assets<Mesh>>,
     inverse_bindposes_assets: Res<Assets<SkinnedMeshInverseBindposes>>,
-    mut skinned_aabb_assets: ResMut<Assets<SkinnedAabbAsset>>,
     query: Query<(Entity, &Mesh3d, &SkinnedMesh), Without<SkinnedAabb>>,
 ) {
     for (entity, mesh, skinned_mesh) in &query {
@@ -360,7 +381,7 @@ pub fn create_skinned_aabbs(
             &skinned_mesh.inverse_bindposes,
         );
 
-        commands.entity(entity).try_insert(skinned_aabb);
+        commands.entity(entity).insert(skinned_aabb);
     }
 }
 
@@ -421,12 +442,11 @@ fn aabb_transformed_by(input: Aabb3d, transform: Affine3A) -> Aabb3d {
     let min = t + min_x + min_y + min_z;
     let max = t + max_x + max_y + max_z;
 
-    // TODO: Should we mask off the w before storing? Check what Vec3A is expecting - we might
-    // have to switch to Vec4.
-
     Aabb3d { min, max }
 }
 
+// Given a skinned mesh and world-space joints, return the entity-space AABB.
+// Returns None if no joints were found or the asset was not found.
 fn get_skinned_aabb(
     component: &SkinnedAabb,
     joints: &Query<&GlobalTransform>,
@@ -475,7 +495,8 @@ pub fn update_skinned_aabbs(
     assets: Res<Assets<SkinnedAabbAsset>>,
     settings: Res<SkinnedAabbSettings>,
 ) {
-    // Awkward closure so we don't have to duplicate the par/non-par paths. TODO: Urgh?
+    // Awkward closure so we don't have to duplicate the parallel/non-parallel paths.
+    // TODO: Urgh. Alternatives?
     let update =
         |(mut entity_aabb, skinned_aabb, skinned_mesh, world_from_entity): (Mut<Aabb>, _, _, _)| {
             if let Some(updated) = get_skinned_aabb(
