@@ -1,12 +1,10 @@
 use bevy::prelude::*;
+use bevy_ecs::system::RunSystemOnce;
 use bevy_math::Vec3A;
 use bevy_mesh::skinning::{SkinnedMesh, SkinnedMeshInverseBindposes};
 use bevy_mod_skinned_aabb::{
     create_skinned_aabbs,
-    dev::{
-        create_dev_world, create_system, create_system_and_run_once, skin,
-        spawn_random_mesh_selection, update_random_mesh_animations,
-    },
+    dev::{create_dev_world, skin, spawn_random_mesh_selection, update_random_mesh_animations},
     update_skinned_aabbs, SkinnedAabbSettings,
 };
 use bevy_render::{mesh::MeshAabb, primitives::Aabb};
@@ -65,16 +63,14 @@ fn test_against_cpu_skinning(
 fn test() {
     let world = &mut create_dev_world(SkinnedAabbSettings::default());
 
-    create_system_and_run_once(spawn_random_mesh_selection, world);
-    create_system_and_run_once(create_skinned_aabbs, world);
-
-    let mut update_system = create_system(update_skinned_aabbs, world);
-    let mut animation_system = create_system(update_random_mesh_animations, world);
-    let mut test_system = create_system(test_against_cpu_skinning, world);
+    world.run_system_once(spawn_random_mesh_selection).unwrap();
+    world.run_system_once(create_skinned_aabbs).unwrap();
 
     for _ in 0..100 {
-        update_system.run((), world);
-        animation_system.run((), world);
-        test_system.run((), world);
+        world.run_system_cached(update_skinned_aabbs).unwrap();
+        world
+            .run_system_cached(update_random_mesh_animations)
+            .unwrap();
+        world.run_system_cached(test_against_cpu_skinning).unwrap();
     }
 }

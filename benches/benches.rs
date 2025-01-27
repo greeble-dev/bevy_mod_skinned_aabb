@@ -1,11 +1,11 @@
 use bevy_asset::Assets;
-use bevy_ecs::prelude::*;
+use bevy_ecs::{prelude::*, system::RunSystemOnce};
 use bevy_mesh::{skinning::SkinnedMeshInverseBindposes, Mesh};
 use bevy_mod_skinned_aabb::{
     create_skinned_aabbs,
     dev::{
-        create_dev_world, create_random_skinned_mesh_assets, create_system,
-        create_system_and_run_once, spawn_random_skinned_mesh, RandomSkinnedMeshType,
+        create_dev_world, create_random_skinned_mesh_assets, spawn_random_skinned_mesh,
+        RandomSkinnedMeshType,
     },
     update_skinned_aabbs, SkinnedAabbSettings,
 };
@@ -63,11 +63,10 @@ fn bench_internal(b: &mut Bencher, settings: SkinnedAabbSettings, mesh_params: &
 
     world.insert_resource(*mesh_params);
 
-    create_system_and_run_once(create_meshes, world);
-    create_system_and_run_once(create_skinned_aabbs, world);
+    world.run_system_once(create_meshes).unwrap();
+    world.run_system_once(create_skinned_aabbs).unwrap();
 
-    let mut update_system = create_system(update_skinned_aabbs, world);
-    b.iter(move || update_system.run((), world));
+    b.iter(move || world.run_system_cached(update_skinned_aabbs).unwrap());
 }
 
 pub fn bench(c: &mut Criterion) {

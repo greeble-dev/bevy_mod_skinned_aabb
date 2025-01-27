@@ -9,9 +9,7 @@ use bevy_color::Color;
 use bevy_ecs::{
     component::Component,
     entity::Entity,
-    system::{
-        Commands, FunctionSystem, IntoSystem, Query, Res, ResMut, System, SystemParamFunction,
-    },
+    system::{Commands, Query, Res, ResMut},
     world::World,
 };
 use bevy_hierarchy::BuildChildren;
@@ -529,7 +527,7 @@ pub fn update_random_mesh_animations(
         let t0 = random_transform_maybe_outlier(&mut ChaCha8Rng::seed_from_u64(noise.keys[0]));
         let t1 = random_transform_maybe_outlier(&mut ChaCha8Rng::seed_from_u64(noise.keys[1]));
 
-        // Blend between the transforms with a nice ease in/out over 2/3rds of a 
+        // Blend between the transforms with a nice ease in/out over 2/3rds of a
         // second, then hold for 1/3rd of a second.
 
         let ease = EasingCurve::new(0.0, 1.0, EaseFunction::CubicInOut);
@@ -543,28 +541,6 @@ pub fn update_random_mesh_animations(
             scale: t0.scale.lerp(t1.scale, alpha),
         };
     }
-}
-
-// Create a system that can be run on the given world.
-pub fn create_system<M, F>(func: F, world: &mut World) -> FunctionSystem<M, F>
-where
-    M: 'static,
-    F: SystemParamFunction<M>,
-{
-    let mut system = IntoSystem::into_system(func);
-    system.initialize(world);
-    system.update_archetype_component_access(world.as_unsafe_world_cell());
-
-    system
-}
-
-// Create a system and run it once on the given world.
-pub fn create_system_and_run_once<M, F>(func: F, world: &mut World)
-where
-    M: 'static,
-    F: SystemParamFunction<M, In = ()>,
-{
-    create_system(func, world).run((), world);
 }
 
 // Create a `World` suitable for running our benchmarks and tests.
