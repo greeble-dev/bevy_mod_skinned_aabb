@@ -77,7 +77,7 @@ fn cpu_skinning_spawn_new(
         let Ok(cpu_skinned_mesh) = skin(
             mesh,
             skinned_mesh,
-            &transform.affine(),
+            transform,
             &mesh_assets,
             &inverse_bindposes_assets,
             &joints,

@@ -4,8 +4,8 @@ use bevy_mesh::{skinning::SkinnedMeshInverseBindposes, Mesh};
 use bevy_mod_skinned_aabb::{
     create_skinned_aabbs,
     dev::{
-        create_dev_world, create_random_skinned_mesh_assets, init_and_run_system, init_system,
-        spawn_random_skinned_mesh, RandomSkinnedMeshType,
+        create_dev_world, create_random_skinned_mesh_assets, create_system,
+        create_system_and_run_once, spawn_random_skinned_mesh, RandomSkinnedMeshType,
     },
     update_skinned_aabbs, SkinnedAabbSettings,
 };
@@ -63,10 +63,10 @@ fn bench_internal(b: &mut Bencher, settings: SkinnedAabbSettings, mesh_params: &
 
     world.insert_resource(*mesh_params);
 
-    init_and_run_system(create_meshes, world);
-    init_and_run_system(create_skinned_aabbs, world);
+    create_system_and_run_once(create_meshes, world);
+    create_system_and_run_once(create_skinned_aabbs, world);
 
-    let mut update_system = init_system(update_skinned_aabbs, world);
+    let mut update_system = create_system(update_skinned_aabbs, world);
     b.iter(move || update_system.run((), world));
 }
 

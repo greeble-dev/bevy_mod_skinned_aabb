@@ -4,8 +4,8 @@ use bevy_mesh::skinning::{SkinnedMesh, SkinnedMeshInverseBindposes};
 use bevy_mod_skinned_aabb::{
     create_skinned_aabbs,
     dev::{
-        create_dev_world, init_and_run_system, init_system, skin, spawn_random_mesh_selection,
-        update_random_mesh_animations,
+        create_dev_world, create_system, create_system_and_run_once, skin,
+        spawn_random_mesh_selection, update_random_mesh_animations,
     },
     update_skinned_aabbs, SkinnedAabbSettings,
 };
@@ -26,7 +26,7 @@ fn test_against_cpu_skinning(
         if let Ok(cpu_skinned_mesh) = skin(
             mesh,
             skinned_mesh,
-            &transform.affine(),
+            transform,
             &mesh_assets,
             &inverse_bindposes_assets,
             &joints,
@@ -65,12 +65,12 @@ fn test_against_cpu_skinning(
 fn test() {
     let world = &mut create_dev_world(SkinnedAabbSettings::default());
 
-    init_and_run_system(spawn_random_mesh_selection, world);
-    init_and_run_system(create_skinned_aabbs, world);
+    create_system_and_run_once(spawn_random_mesh_selection, world);
+    create_system_and_run_once(create_skinned_aabbs, world);
 
-    let mut update_system = init_system(update_skinned_aabbs, world);
-    let mut animation_system = init_system(update_random_mesh_animations, world);
-    let mut test_system = init_system(test_against_cpu_skinning, world);
+    let mut update_system = create_system(update_skinned_aabbs, world);
+    let mut animation_system = create_system(update_random_mesh_animations, world);
+    let mut test_system = create_system(test_against_cpu_skinning, world);
 
     for _ in 0..100 {
         update_system.run((), world);

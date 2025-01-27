@@ -44,7 +44,7 @@ use std::{
 };
 use std::{iter::once, iter::repeat_with};
 
-// Returns a Vec3 with each element sampled from the given distribution.
+// Return a Vec3 with each element sampled from the given distribution.
 fn random_vec3<T: Borrow<f32>, D: Distribution<T>>(rng: &mut dyn RngCore, dist: D) -> Vec3 {
     Vec3::new(
         *rng.sample(&dist).borrow(),
@@ -53,37 +53,37 @@ fn random_vec3<T: Borrow<f32>, D: Distribution<T>>(rng: &mut dyn RngCore, dist: 
     )
 }
 
-// Returns a Vec3 with each element uniformly sampled from the set [-1.0, 0.0, 1.0].
-fn random_outlier_vec3_snorm(rng: &mut dyn RngCore) -> Vec3 {
+// Return a Vec3 with each element uniformly sampled from the set (-1.0, 0.0, 1.0).
+fn random_vec3_snorm_outlier(rng: &mut dyn RngCore) -> Vec3 {
     let dist = Slice::new(&[-1.0f32, 0.0f32, 1.0f32]).unwrap();
 
     random_vec3(rng, dist)
 }
 
-// Returns a Vec3 with each element uniformly sampled from the range [-1.0, 1.0].
+// Return a Vec3 with each element uniformly sampled from the range [-1.0, 1.0].
 pub fn random_vec3_snorm(rng: &mut dyn RngCore) -> Vec3 {
     let dist = Uniform::new_inclusive(-1.0f32, 1.0f32);
 
     random_vec3(rng, dist)
 }
 
-// 50/50 chance of returning random_vec3_snorm or random_outlier_vec3_snorm.
-fn random_maybe_outlier_vec3_snorm(rng: &mut dyn RngCore) -> Vec3 {
+// 50/50 chance of returning random_vec3_snorm or random_vec3_snorm_outlier.
+fn random_vec3_snorm_maybe_outlier(rng: &mut dyn RngCore) -> Vec3 {
     if rng.gen::<bool>() {
         random_vec3_snorm(rng)
     } else {
-        random_outlier_vec3_snorm(rng)
+        random_vec3_snorm_outlier(rng)
     }
 }
 
-// Returns a random quaternion that's uniformly distributed on the 3-sphere.
+// Return a random quaternion that's uniformly distributed on the 3-sphere.
 //
 // Source: Ken Shoemake, "Uniform Random Rotations", Graphics Gems III, Academic Press, 1992, pp. 124–132.
 //
-// We could have used Glam's default random instead. But it's implemented as a uniformly sampled axis and
-// angle and so is not uniformly distributed on the 3-sphere. Which is probably fine for our purposes, but hey.
+// We could have used Glam's default random instead. But it's implemented as a
+// uniformly sampled axis and angle and so is not uniformly distributed on the
+// 3-sphere. Which is probably fine for our purposes, but hey.
 fn random_quat(rng: &mut dyn RngCore) -> Quat {
-    // TODO: Should these ranges be inclusive or not?
     let r0 = rng.gen_range(0.0f32..TAU);
     let r1 = rng.gen_range(0.0f32..TAU);
     let r2 = rng.gen_range(0.0f32..1.0f32);
@@ -97,7 +97,9 @@ fn random_quat(rng: &mut dyn RngCore) -> Quat {
     Quat::from_xyzw(t0 * s0, t0 * c0, t1 * s1, t1 * c1)
 }
 
-fn random_outlier_quat(rng: &mut dyn RngCore) -> Quat {
+// Return a random quaternion that's identity or a 90/180 degree rotation
+// around a single axis.
+fn random_quat_outlier(rng: &mut dyn RngCore) -> Quat {
     let a90 = 1.0 / 2.0f32.sqrt();
 
     let values = [
@@ -116,19 +118,31 @@ fn random_outlier_quat(rng: &mut dyn RngCore) -> Quat {
     *rng.sample(Slice::new(&values).unwrap())
 }
 
-// 50/50 chance of returning random_quat or random_outlier_quat.
-fn random_maybe_outlier_quat(rng: &mut dyn RngCore) -> Quat {
+// 50/50 chance of returning random_quat or random_quat_outlier.
+fn random_quat_maybe_outlier(rng: &mut dyn RngCore) -> Quat {
     if rng.gen::<bool>() {
         random_quat(rng)
     } else {
-        random_outlier_quat(rng)
+        random_quat_outlier(rng)
     }
 }
 
 fn random_transform(rng: &mut dyn RngCore) -> Transform {
-    let translation = random_maybe_outlier_vec3_snorm(rng) * 0.5;
-    let rotation: Quat = random_maybe_outlier_quat(rng);
-    let scale = random_maybe_outlier_vec3_snorm(rng);
+    let translation = random_vec3_snorm(rng) * 0.5;
+    let rotation: Quat = random_quat(rng);
+    let scale = random_vec3_snorm(rng);
+
+    Transform {
+        translation,
+        rotation,
+        scale,
+    }
+}
+
+fn random_transform_maybe_outlier(rng: &mut dyn RngCore) -> Transform {
+    let translation = random_vec3_snorm_maybe_outlier(rng) * 0.5;
+    let rotation: Quat = random_quat_maybe_outlier(rng);
+    let scale = random_vec3_snorm_maybe_outlier(rng);
 
     Transform {
         translation,
@@ -141,6 +155,8 @@ pub enum RandomMeshError {
     InvalidNumJoints,
 }
 
+// Create a mesh with random triangles skinned to random joints with varying
+// weights.
 fn create_random_soft_skinned_mesh(
     rng: &mut dyn RngCore,
     num_tris: usize,
@@ -180,18 +196,18 @@ fn create_random_soft_skinned_mesh(
         joint_weights[vert_index] = vert_joint_weights;
     }
 
+    let joint_indices = VertexAttributeValues::Uint16x4(joint_indices);
+
     Ok(Mesh::new(
         PrimitiveTopology::TriangleList,
         RenderAssetUsages::default(),
     )
     .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
-    .with_inserted_attribute(
-        Mesh::ATTRIBUTE_JOINT_INDEX,
-        VertexAttributeValues::Uint16x4(joint_indices),
-    )
+    .with_inserted_attribute(Mesh::ATTRIBUTE_JOINT_INDEX, joint_indices)
     .with_inserted_attribute(Mesh::ATTRIBUTE_JOINT_WEIGHT, joint_weights))
 }
 
+// Create a mesh with a triangle hard skinned to each joint.
 fn create_random_hard_skinned_mesh(
     rng: &mut dyn RngCore,
     num_unskinned_joints: usize,
@@ -233,6 +249,7 @@ fn create_random_hard_skinned_mesh(
         }
     }
 
+    let joint_indices = VertexAttributeValues::Uint16x4(joint_indices);
     let joint_weights = vec![[1.0f32, 0.0f32, 0.0f32, 0.0f32]; num_verts];
 
     Ok(Mesh::new(
@@ -240,10 +257,7 @@ fn create_random_hard_skinned_mesh(
         RenderAssetUsages::default(),
     )
     .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
-    .with_inserted_attribute(
-        Mesh::ATTRIBUTE_JOINT_INDEX,
-        VertexAttributeValues::Uint16x4(joint_indices),
-    )
+    .with_inserted_attribute(Mesh::ATTRIBUTE_JOINT_INDEX, joint_indices)
     .with_inserted_attribute(Mesh::ATTRIBUTE_JOINT_WEIGHT, joint_weights))
 }
 
@@ -251,7 +265,7 @@ fn create_random_inverse_bindposes(
     rng: &mut dyn RngCore,
     num_joints: usize,
 ) -> SkinnedMeshInverseBindposes {
-    // Leave the root as identity so it's more visually pleasing.
+    // Leaving the root as identity makes it more visually pleasing.
     let iter = once(Mat4::IDENTITY).chain(repeat_with(|| random_transform(rng).compute_matrix()));
 
     SkinnedMeshInverseBindposes::from(iter.take(num_joints).collect::<Vec<_>>())
@@ -306,7 +320,7 @@ fn hash<T: Hash>(v: T) -> u64 {
     hasher.finish()
 }
 
-// An infinite timeline of noise, where each item of noise is one unit of time apart.
+// An infinite timeline of discrete noise, with each sample one unit apart.
 struct NoiseTimeline {
     seed: u64,
 }
@@ -508,13 +522,15 @@ pub fn update_random_mesh_animations(
     time: Res<Time<Virtual>>,
 ) {
     for (mut transform, animation) in &mut query {
+        // Sample the noise timeline and generate a transform for each key.
+
         let noise = animation.noise.sample(time.elapsed_secs());
 
-        let t0 = random_transform(&mut ChaCha8Rng::seed_from_u64(noise.keys[0]));
-        let t1 = random_transform(&mut ChaCha8Rng::seed_from_u64(noise.keys[1]));
+        let t0 = random_transform_maybe_outlier(&mut ChaCha8Rng::seed_from_u64(noise.keys[0]));
+        let t1 = random_transform_maybe_outlier(&mut ChaCha8Rng::seed_from_u64(noise.keys[1]));
 
-        // Blend between transforms with a nice ease in/out, and hold each transform
-        // for 1/3rd of a second.
+        // Blend between the transforms with a nice ease in/out over 2/3rds of a 
+        // second, then hold for 1/3rd of a second.
 
         let ease = EasingCurve::new(0.0, 1.0, EaseFunction::CubicInOut);
         let alpha = ease.sample_clamped(noise.alpha * 1.5);
@@ -529,7 +545,8 @@ pub fn update_random_mesh_animations(
     }
 }
 
-pub fn init_system<M, F>(func: F, world: &mut World) -> FunctionSystem<M, F>
+// Create a system that can be run on the given world.
+pub fn create_system<M, F>(func: F, world: &mut World) -> FunctionSystem<M, F>
 where
     M: 'static,
     F: SystemParamFunction<M>,
@@ -541,14 +558,16 @@ where
     system
 }
 
-pub fn init_and_run_system<M, F>(func: F, world: &mut World)
+// Create a system and run it once on the given world.
+pub fn create_system_and_run_once<M, F>(func: F, world: &mut World)
 where
     M: 'static,
     F: SystemParamFunction<M, In = ()>,
 {
-    init_system(func, world).run((), world);
+    create_system(func, world).run((), world);
 }
 
+// Create a `World` suitable for running our benchmarks and tests.
 pub fn create_dev_world(settings: SkinnedAabbSettings) -> World {
     ComputeTaskPool::get_or_init(TaskPool::default);
 
@@ -652,7 +671,7 @@ fn skin_internal(
     let entity_from_binds = entity_from_joints
         .iter()
         .zip(inverse_bindposes.iter())
-        .map(|(entity_from_joint, inverse_bindpose)| *entity_from_joint * *inverse_bindpose) // TODO: Should this be Mat4? Or keep Affine3A through skinning?
+        .map(|(entity_from_joint, inverse_bindpose)| *entity_from_joint * *inverse_bindpose)
         .collect::<Vec<_>>();
 
     // TODO: Awkward? Appears needed since match patterns can't be expressions.
@@ -691,15 +710,18 @@ fn try_entity_from_joint(
     Some(Mat4::from(entity_from_world * world_from_joint))
 }
 
+// Given the components of a skinned mesh, return a copy of the mesh with
+// positions skinned to the current joint transforms. The mesh's skinning
+// attributes are removed. Tangents and normals are *not* skinned.
 pub fn skin(
     mesh: &Mesh3d,
     skinned_mesh: &SkinnedMesh,
-    world_from_entity: &Affine3A,
+    world_from_entity: &GlobalTransform,
     mesh_assets: &Assets<Mesh>,
     inverse_bindposes_assets: &Assets<SkinnedMeshInverseBindposes>,
     joint_transforms: &Query<&GlobalTransform>,
 ) -> Result<Mesh, SkinError> {
-    let entity_from_world = world_from_entity.inverse();
+    let entity_from_world = world_from_entity.affine().inverse();
 
     let entity_from_joints = skinned_mesh
         .joints
