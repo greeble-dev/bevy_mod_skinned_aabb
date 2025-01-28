@@ -104,17 +104,15 @@ fn draw_joint_aabbs(
     // TODO: Nesting a bit too deep? Maybe split into an inner function.
 
     query.iter().for_each(|(skinned_aabb, skinned_mesh)| {
-        if let Some(asset_handle) = &skinned_aabb.asset {
-            if let Some(asset) = assets.get(asset_handle) {
-                for aabb_index in 0..asset.num_aabbs() {
-                    if let Some(world_from_joint) =
-                        asset.world_from_joint(aabb_index, skinned_mesh, &joints)
-                    {
-                        let joint_from_aabb = gizmo_transform_from_aabb3d(asset.aabb(aabb_index));
-                        let world_from_aabb = world_from_joint * joint_from_aabb;
+        if let Some(asset) = assets.get(&skinned_aabb.asset) {
+            for aabb_index in 0..asset.num_aabbs() {
+                if let Some(world_from_joint) =
+                    asset.world_from_joint(aabb_index, skinned_mesh, &joints)
+                {
+                    let joint_from_aabb = gizmo_transform_from_aabb3d(asset.aabb(aabb_index));
+                    let world_from_aabb = world_from_joint * joint_from_aabb;
 
-                        gizmos.cuboid(world_from_aabb, Color::WHITE);
-                    }
+                    gizmos.cuboid(world_from_aabb, Color::WHITE);
                 }
             }
         }

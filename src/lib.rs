@@ -140,11 +140,7 @@ impl SkinnedAabbAsset {
 // TODO: Is this name misleading? Could be interpreted as the actual AABB.
 #[derive(Component, Debug, Default)]
 pub struct SkinnedAabb {
-    // Optional asset. This is optional because the skinned aabb can fail to create due to missing
-    // assets, but we still need to add the component so we don't attempt to recreate it next frame.
-    //
-    // If the skinned aabb creation is moved into the asset pipeline then this doesn't need to be optional.
-    pub asset: Option<Handle<SkinnedAabbAsset>>,
+    pub asset: Handle<SkinnedAabbAsset>,
 }
 
 // Return `aabb` extended to include `point`. If `aabb` is none, return the
@@ -314,15 +310,20 @@ fn create_skinned_aabb_component(
     mesh_handle: &Handle<Mesh>,
     inverse_bindposes_assets: &Assets<SkinnedMeshInverseBindposes>,
     inverse_bindposes_handle: &Handle<SkinnedMeshInverseBindposes>,
-) -> SkinnedAabb {
-    // First check that the source assets are valid. If not then return an empty
-    // component.
+) -> Option<SkinnedAabb> {
+    // If the source assets are invalid then return None.
+    //
+    // TODO: I think this is needed to handle assets that are temporarily
+    // invalid then get added later. But if the assets are never valid then
+    // we're awkwardly checking them every frame. Would be nice to improve, but
+    // hopefully this whole thing moves into the asset pipeline and the issue
+    // becomes moot.
 
     let (Some(mesh), Some(inverse_bindposes)) = (
         mesh_assets.get(mesh_handle),
         inverse_bindposes_assets.get(inverse_bindposes_handle),
     ) else {
-        return SkinnedAabb { asset: None };
+        return None;
     };
 
     let source = SkinnedAabbSourceAssets {
@@ -339,9 +340,9 @@ fn create_skinned_aabb_component(
         .iter()
         .find(|(_, candidate_asset)| candidate_asset.source == source)
     {
-        return SkinnedAabb {
-            asset: Some(Handle::Weak(existing_asset_id)),
-        };
+        return Some(SkinnedAabb {
+            asset: Handle::Weak(existing_asset_id),
+        });
     }
 
     // No existing asset found so create a new one.
@@ -360,11 +361,11 @@ fn create_skinned_aabb_component(
         inverse_bindposes_handle.id(),
     ));
 
-    SkinnedAabb { asset: Some(asset) }
+    Some(SkinnedAabb { asset })
 }
 
 // If any entities have `Mesh3d` and `SkinnedMesh` components but no
-// `SkinnedAabb`, create one.
+// `SkinnedAabb`, try to create one.
 pub fn create_skinned_aabbs(
     mut commands: Commands,
     mut skinned_aabb_assets: ResMut<Assets<SkinnedAabbAsset>>,
@@ -373,15 +374,15 @@ pub fn create_skinned_aabbs(
     query: Query<(Entity, &Mesh3d, &SkinnedMesh), Without<SkinnedAabb>>,
 ) {
     for (entity, mesh, skinned_mesh) in &query {
-        let skinned_aabb = create_skinned_aabb_component(
+        if let Some(skinned_aabb) = create_skinned_aabb_component(
             &mut skinned_aabb_assets,
             &mesh_assets,
             &mesh.0,
             &inverse_bindposes_assets,
             &skinned_mesh.inverse_bindposes,
-        );
-
-        commands.entity(entity).insert(skinned_aabb);
+        ) {
+            commands.entity(entity).insert(skinned_aabb);
+        }
     }
 }
 
@@ -454,7 +455,7 @@ fn get_skinned_aabb(
     skinned_mesh: &SkinnedMesh,
     world_from_entity: &GlobalTransform,
 ) -> Option<Aabb> {
-    let asset = assets.get(component.asset.as_ref()?)?;
+    let asset = assets.get(&component.asset)?;
     let world_from_entity = world_from_entity.affine();
     let num_aabbs = asset.num_aabbs();
 
