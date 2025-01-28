@@ -1,12 +1,14 @@
 [package]
 name = "bevy_mod_skinned_aabb"
 version = "0.1.0"
-edition = "2021"
-keywords = ["bevy"]
-categories = ["game-engines"]
+description = "A Bevy plugin that automatically calculates AABBs for skinned meshes"
 authors = ["Greeble <greeble@greeble.dev>"]
 repository = "https://github.com/greeble-dev/bevy_mod_skinned_aabb"
 license = "MIT OR Apache-2.0"
+edition = "2021"
+keywords = ["bevy"]
+categories = ["game-development"]
+exclude = [".github/", "assets/", "notes/"]
 
 [dependencies]
 bevy_app = { version = "0.15", default-features = false }
