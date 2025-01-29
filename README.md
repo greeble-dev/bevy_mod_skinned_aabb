@@ -2,12 +2,12 @@
 
 ***UNDER CONSTRUCTION - USE AT YOUR OWN RISK***
 
-A [Bevy](https://github.com/bevyengine/bevy) plugin that automatically calculates AABBs for skinned meshes. This can solve issues with disappearing skinned meshes (https://github.com/bevyengine/bevy/issues/4971).
+A [Bevy](https://github.com/bevyengine/bevy) plugin that automatically calculates AABBs for skinned meshes. This can solve issues with disappearing meshes (https://github.com/bevyengine/bevy/issues/4971).
 
 https://github.com/user-attachments/assets/73d236da-43a8-4b63-a19e-f3625d374077
 
 
-The plugin calculates an AABB for each joint in the skinned mesh (white boxes), then uses them to calculate an AABB for the whole mesh (colored boxes).
+The plugin calculates an AABB for each joint (white boxes), then uses them to calculate an AABB for the whole skinned mesh (colored boxes).
 
 - [Quick Start](#quick-start)
 - [Examples](#examples)

@@ -80,15 +80,6 @@ dev = [
 	"dep:rand_core",
 ]
 
-[[example]]
-name = "many_foxes"
-
-[[example]]
-name = "random"
-
-[[example]]
-name = "showcase"
-
 [[bench]]
 name = "benches"
 harness = false
