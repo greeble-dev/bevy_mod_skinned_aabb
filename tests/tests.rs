@@ -1,13 +1,13 @@
+#[path = "../dev/dev.rs"]
+mod dev;
+
 use bevy::prelude::*;
 use bevy_ecs::system::RunSystemOnce;
 use bevy_math::Vec3A;
 use bevy_mesh::skinning::{SkinnedMesh, SkinnedMeshInverseBindposes};
-use bevy_mod_skinned_aabb::{
-    create_skinned_aabbs,
-    dev::{create_dev_world, skin, spawn_random_mesh_selection, update_random_mesh_animations},
-    update_skinned_aabbs, SkinnedAabbSettings,
-};
+use bevy_mod_skinned_aabb::{create_skinned_aabbs, update_skinned_aabbs, SkinnedAabbSettings};
 use bevy_render::{mesh::MeshAabb, primitives::Aabb};
+use dev::{create_dev_world, skin, spawn_random_mesh_selection, update_random_mesh_animations};
 
 fn test_against_cpu_skinning(
     query: Query<(&Mesh3d, &SkinnedMesh, &GlobalTransform, &Aabb)>,

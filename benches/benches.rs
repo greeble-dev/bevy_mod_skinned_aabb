@@ -1,17 +1,17 @@
+#[path = "../dev/dev.rs"]
+mod dev;
+
 use bevy_asset::Assets;
 use bevy_ecs::{prelude::*, system::RunSystemOnce};
 use bevy_mesh::{skinning::SkinnedMeshInverseBindposes, Mesh};
-use bevy_mod_skinned_aabb::{
-    create_skinned_aabbs,
-    dev::{
-        create_dev_world, create_random_skinned_mesh_assets, spawn_random_skinned_mesh,
-        RandomSkinnedMeshType,
-    },
-    update_skinned_aabbs, SkinnedAabbSettings,
-};
+use bevy_mod_skinned_aabb::{create_skinned_aabbs, update_skinned_aabbs, SkinnedAabbSettings};
 use bevy_transform::prelude::*;
 use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Bencher, Criterion, Throughput};
+use dev::{
+    create_dev_world, create_random_skinned_mesh_assets, spawn_random_skinned_mesh,
+    RandomSkinnedMeshType,
+};
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use std::iter::repeat_with;

@@ -1,9 +1,10 @@
+#[path = "../dev/dev.rs"]
+mod dev;
+
 use bevy::prelude::*;
 use bevy_mesh::skinning::{SkinnedMesh, SkinnedMeshInverseBindposes};
-use bevy_mod_skinned_aabb::dev::{
-    skin, spawn_random_mesh_selection, update_random_mesh_animations,
-};
 use bevy_render::{camera::ScalingMode, primitives::Aabb};
+use dev::{skin, spawn_random_mesh_selection, update_random_mesh_animations};
 
 fn main() {
     App::new()

@@ -8,7 +8,15 @@ license = "MIT OR Apache-2.0"
 edition = "2021"
 keywords = ["bevy"]
 categories = ["game-development"]
-exclude = [".github/", "assets/", "notes/"]
+exclude = [
+	".github/",
+	"assets/",
+	"notes/",
+	"dev/",
+	"examples/",
+	"benches/",
+	"tests/",
+]
 
 [dependencies]
 bevy_app = { version = "0.15", default-features = false }
@@ -24,39 +32,16 @@ bevy_reflect = { version = "0.15", default-features = false }
 bevy_render = { version = "0.15", default-features = false }
 bevy_transform = { version = "0.15", default-features = false }
 
-# Dependencies used by the crate's internal tests and examples.
-bevy_hierarchy = { version = "0.15", default-features = false, optional = true }
-bevy_time = { version = "0.15", default-features = false, optional = true }
-bevy_tasks = { version = "0.15", default-features = false, optional = true }
-bevy_pbr = { version = "0.15", default-features = false, optional = true }
-rand = { version = "0.8", default-features = false, optional = true }
-rand_chacha = { version = "0.3", default-features = false, optional = true }
-rand_core = { version = "0.6", default-features = false, optional = true }
-
 [dev-dependencies]
-bevy_mod_skinned_aabb = { path = ".", features = ["dev"] }
+rand = "0.8"
+rand_chacha = "0.3"
+rand_core = "0.6"
 bevy = "0.15"
-criterion = { version = "0.5" }
-
-[profile.release-with-debug]
-inherits = "release"
-debug = true
+criterion = "0.5"
 
 [features]
 # Enable performance tracing (https://github.com/bevyengine/bevy/blob/main/docs/profiling.md).
 trace = []
-
-# Enable utility code used by the crate's internal tests and examples. Crate
-# users should not enable this feature.
-dev = [
-	"dep:bevy_hierarchy",
-	"dep:bevy_time",
-	"dep:bevy_tasks",
-	"dep:bevy_pbr",
-	"dep:rand",
-	"dep:rand_chacha",
-	"dep:rand_core",
-]
 
 [[bench]]
 name = "benches"

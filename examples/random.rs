@@ -1,9 +1,12 @@
+#[path = "../dev/dev.rs"]
+mod dev;
+
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_mod_skinned_aabb::{
     debug::{toggle_draw_joint_aabbs, toggle_draw_mesh_aabbs, SkinnedAabbDebugPlugin},
-    dev::{spawn_random_mesh_selection, update_random_mesh_animations},
     SkinnedAabbPlugin,
 };
+use dev::{spawn_random_mesh_selection, update_random_mesh_animations};
 
 fn main() {
     App::new()

@@ -1,8 +1,6 @@
 // Based on bevy/examples/stress_tests/many_foxes.rs. Removes a bunch of options to keep
 // things simple. Adds skinned aabb debug rendering - press J for joints and M for meshes.
 
-use std::f32::consts::PI;
-
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     input::common_conditions::input_just_pressed,
@@ -10,8 +8,8 @@ use bevy::{
     window::{PresentMode, WindowResolution},
     winit::{UpdateMode, WinitSettings},
 };
-
 use bevy_mod_skinned_aabb::prelude::*;
+use std::f32::consts::PI;
 
 #[derive(Resource)]
 struct Foxes {
