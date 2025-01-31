@@ -1,5 +1,10 @@
 // Utilities for tests and examples.
 
+// TODO: Rust-analyzer complains about dead code even though all public
+// functions are used in various tests and examples. Is there a better way to
+// handle this?
+#![allow(dead_code)]
+
 use bevy::{
     prelude::*,
     tasks::{ComputeTaskPool, TaskPool},
