@@ -25,11 +25,11 @@ bevy_render = { version = "0.15", default-features = false }
 bevy_transform = { version = "0.15", default-features = false }
 
 [dev-dependencies]
+bevy = "0.15"
+criterion = "0.5"
 rand = "0.8"
 rand_chacha = "0.3"
 rand_core = "0.6"
-bevy = "0.15"
-criterion = "0.5"
 
 [features]
 # Enable performance tracing (https://github.com/bevyengine/bevy/blob/main/docs/profiling.md).
