@@ -32,12 +32,11 @@ pub struct SkinnedAabbPlugin;
 impl Plugin for SkinnedAabbPlugin {
     fn build(&self, app: &mut App) {
         app.init_asset::<SkinnedAabbAsset>()
-            .insert_resource(SkinnedAabbSettings { parallel: true })
+            .insert_resource(SkinnedAabbPluginSettings { parallel: true })
             .add_systems(Update, create_skinned_aabbs)
             .add_systems(
                 PostUpdate,
                 update_skinned_aabbs
-                    // TODO: Verify ordering.
                     .after(TransformSystem::TransformPropagate)
                     .before(VisibilitySystems::CheckVisibility),
             );
@@ -45,14 +44,14 @@ impl Plugin for SkinnedAabbPlugin {
 }
 
 #[derive(Resource, Copy, Clone)]
-pub struct SkinnedAabbSettings {
+pub struct SkinnedAabbPluginSettings {
     // If true, the skinned AABB update will run on multiple threads. Defaults to true.
     pub parallel: bool,
 }
 
-impl Default for SkinnedAabbSettings {
+impl Default for SkinnedAabbPluginSettings {
     fn default() -> Self {
-        SkinnedAabbSettings { parallel: true }
+        SkinnedAabbPluginSettings { parallel: true }
     }
 }
 
@@ -488,7 +487,7 @@ pub fn update_skinned_aabbs(
     mut query: Query<(&mut Aabb, &SkinnedAabb, &SkinnedMesh, &GlobalTransform)>,
     joints: Query<&GlobalTransform>,
     assets: Res<Assets<SkinnedAabbAsset>>,
-    settings: Res<SkinnedAabbSettings>,
+    settings: Res<SkinnedAabbPluginSettings>,
 ) {
     // Awkward closure so we don't have to duplicate the parallel/non-parallel paths.
     // TODO: Urgh. Alternatives?

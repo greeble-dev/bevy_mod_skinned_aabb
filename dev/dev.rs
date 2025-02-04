@@ -22,7 +22,7 @@ use bevy_math::{
     ops, Affine3A, Mat4, Quat, Vec3,
 };
 use bevy_mesh::{Mesh, MeshVertexAttributeId};
-use bevy_mod_skinned_aabb::{JointIndex, SkinnedAabbAsset, SkinnedAabbSettings, MAX_INFLUENCES};
+use bevy_mod_skinned_aabb::{JointIndex, SkinnedAabbAsset, SkinnedAabbPluginSettings, MAX_INFLUENCES};
 use bevy_render::{
     mesh::{
         skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
@@ -546,7 +546,7 @@ pub fn update_random_mesh_animations(
 }
 
 // Create a `World` suitable for running our benchmarks and tests.
-pub fn create_dev_world(settings: SkinnedAabbSettings) -> World {
+pub fn create_dev_world(settings: SkinnedAabbPluginSettings) -> World {
     ComputeTaskPool::get_or_init(TaskPool::default);
 
     let mut world = World::default();

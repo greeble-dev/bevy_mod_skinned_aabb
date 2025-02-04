@@ -4,7 +4,9 @@ mod dev;
 use bevy_asset::Assets;
 use bevy_ecs::{prelude::*, system::RunSystemOnce};
 use bevy_mesh::{skinning::SkinnedMeshInverseBindposes, Mesh};
-use bevy_mod_skinned_aabb::{create_skinned_aabbs, update_skinned_aabbs, SkinnedAabbSettings};
+use bevy_mod_skinned_aabb::{
+    create_skinned_aabbs, update_skinned_aabbs, SkinnedAabbPluginSettings,
+};
 use bevy_transform::prelude::*;
 use core::time::Duration;
 use criterion::{criterion_group, criterion_main, Bencher, Criterion, Throughput};
@@ -58,7 +60,7 @@ fn create_meshes(
     }
 }
 
-fn bench_internal(b: &mut Bencher, settings: SkinnedAabbSettings, mesh_params: &MeshParams) {
+fn bench_internal(b: &mut Bencher, settings: SkinnedAabbPluginSettings, mesh_params: &MeshParams) {
     let world = &mut create_dev_world(settings);
 
     world.insert_resource(*mesh_params);
@@ -151,7 +153,7 @@ pub fn bench(c: &mut Criterion) {
                 num_joints,
             };
 
-            let settings = SkinnedAabbSettings { parallel };
+            let settings = SkinnedAabbPluginSettings { parallel };
 
             group.bench_function(name, |b| bench_internal(b, settings, &mesh_params));
         }
