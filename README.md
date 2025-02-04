@@ -6,20 +6,18 @@ A [Bevy](https://github.com/bevyengine/bevy) plugin that automatically calculate
 
 https://github.com/user-attachments/assets/73d236da-43a8-4b63-a19e-f3625d374077
 
-The goal of the plugin is to fix meshes disappearing due to incorrect AABBs (https://github.com/bevyengine/bevy/issues/4971).
+The goal of the plugin is to [fix meshes disappearing due to incorrect AABBs](https://github.com/bevyengine/bevy/issues/4971). It works by pre-calculating AABBs for each joint of the skinned mesh.
 
 ---
 
 - [Quick Start](#quick-start)
 - [Examples](#examples)
 - [Limitations](#limitations)
-- [Bevy Compatibility](#bevy-compatibility)
 - [FAQ](#faq)
-
 
 ## Quick Start
 
-To enable skinned AABBs in your Bevy app, update your `Cargo.toml` dependencies:
+To enable skinned AABBs in a Bevy 0.15 app, update your `Cargo.toml` dependencies:
 
 ```toml
 [dependencies]
@@ -41,6 +39,8 @@ fn main() {
 
 The plugin will automatically detect and update any skinned meshes that are added to the world.
 
+Versions of Bevy prior to 0.15 are not supported.
+
 ## Examples
 
 ```sh
@@ -59,28 +59,20 @@ cargo run --example many_foxes
 - Skinned AABBs do not account for blend shapes and vertex shader shenanigans.
     - Meshes that use these features may have incorrect AABBs.
     - Meshes that only use skinning are safe.
-- Skinned AABBs are conservative but not accurate.
+- Skinned AABBs are conservative but not optimal.
     - They're conservative in that the AABB is guaranteed to contain the mesh's vertices.
-    - But they're not accurate, in that the AABB may be larger than is necessary.
+    - But they're not optimal, in that the AABB may be larger than is necessary.
 - Apps that use hundreds of different skinned mesh assets may have performance issues.
     - Each different asset adds some overhead to spawning mesh instances.
     - It's fine to spawn many instances of a small number of assets.
-- After spawning meshes, the AABBs might be wrong for one frame.
-
-## Bevy Compatibility
-
-The main branch is compatible with Bevy 0.15.
-
-TODO: Proper version tags, compatibility matrix.
+- The AABBs might be wrong for one frame immediately after spawning.
 
 ## FAQ
 
 ### What's the performance impact?
 
-For meshes that are playing a single animation, skinned AABBs increase the per-frame
-CPU cost of each mesh by roughly 4%.
-
-The CPU cost of spawning a mesh from a glTF increases by less than 1%.
+The CPU cost of a mesh playing a single animation increases by roughly 4%. The
+cost of loading a mesh from a glTF increases by less than 1%.
 
 ### How can I see the AABBs?
 
@@ -94,13 +86,15 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins((
             SkinnedAabbPlugin,
-            SkinnedAabbDebugPlugin::enable_by_default(), // Enable debug rendering.
+            // Enable debug rendering.
+            SkinnedAabbDebugPlugin::enable_by_default(),
         ))
         .run();	
 }
 ```
 
-The debug rendering will be enabled by default. You can also leave it disabled by default but enable it with keyboard shortcuts:
+The debug rendering will be enabled by default. You can also leave it disabled
+by default but enable it with keyboard shortcuts:
 
 ```rust
 use bevy_mod_skinned_aabb::prelude::*;
