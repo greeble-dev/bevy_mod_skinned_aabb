@@ -1,5 +1,3 @@
-// TODO: Documentation.
-
 use bevy_app::{App, Plugin, PostUpdate, Update};
 use bevy_asset::{Asset, AssetApp, AssetId, Assets, Handle};
 use bevy_ecs::prelude::*;
@@ -48,8 +46,7 @@ impl Plugin for SkinnedAabbPlugin {
 
 #[derive(Resource, Copy, Clone)]
 pub struct SkinnedAabbSettings {
-    // If true, the skinned AABB update will run on multiple threads. Defaults
-    // to true.
+    // If true, the skinned AABB update will run on multiple threads. Defaults to true.
     pub parallel: bool,
 }
 
@@ -66,7 +63,7 @@ pub type JointIndex = u16;
 // bevy_pbr alongside MAX_JOINTS?
 pub const MAX_INFLUENCES: usize = 4;
 
-// An Aabb3d without padding.
+// An `Aabb3d` without padding.
 #[derive(Copy, Clone, Debug, Reflect)]
 pub struct PackedAabb3d {
     pub min: Vec3,
@@ -91,7 +88,7 @@ impl From<Aabb3d> for PackedAabb3d {
     }
 }
 
-// The assets that were used to create a `SkinnedAabbAsset`.
+// The assets that are used to create a `SkinnedAabbAsset`.
 #[derive(PartialEq, Eq, Debug)]
 pub struct SkinnedAabbSourceAssets {
     pub mesh: AssetId<Mesh>,
@@ -104,16 +101,20 @@ pub struct SkinnedAabbAsset {
     // SkinnedAabbAssets by searching for matching source assets.
     pub source: SkinnedAabbSourceAssets,
 
-    // AABB for each skinned joint.
+    // Joint-space AABB of each skinned joint.
     pub aabbs: Box<[PackedAabb3d]>,
 
-    // Mapping from `self.aabbs` index to `SkinnedMesh::joints` index.
-    pub aabb_to_joint: Box<[JointIndex]>,
+    // Mapping from `SkinnedAabbAsset::aabbs` index to `SkinnedMesh::joints` index.
+    pub aabb_index_to_joint_index: Box<[JointIndex]>,
 }
 
 impl SkinnedAabbAsset {
     pub fn aabb(&self, aabb_index: usize) -> Aabb3d {
         self.aabbs[aabb_index].into()
+    }
+
+    pub fn num_aabbs(&self) -> usize {
+        self.aabbs.len()
     }
 
     pub fn world_from_joint(
@@ -123,14 +124,10 @@ impl SkinnedAabbAsset {
         joints: &Query<&GlobalTransform>,
     ) -> Option<Affine3A> {
         // TODO: Should return an error instead of silently failing?
-        let joint_index = *self.aabb_to_joint.get(aabb_index)? as usize;
+        let joint_index = *self.aabb_index_to_joint_index.get(aabb_index)? as usize;
         let joint_entity = *skinned_mesh.joints.get(joint_index)?;
 
         Some(joints.get(joint_entity).ok()?.affine())
-    }
-
-    pub fn num_aabbs(&self) -> usize {
-        self.aabbs.len()
     }
 }
 
@@ -160,7 +157,7 @@ struct Influence {
     joint_index: usize,
 }
 
-/// Iterates over all vertex influences with non-zero weight.
+/// Iterator over all vertex influences with non-zero weight.
 #[derive(Default)]
 struct InfluenceIterator<'a> {
     vertex_index: usize,
@@ -274,17 +271,17 @@ fn create_skinned_aabb_asset(
     let num_aabbs = optional_aabbs.iter().filter(|o| o.is_some()).count();
 
     let mut aabbs = Vec::<PackedAabb3d>::with_capacity(num_aabbs);
-    let mut aabb_to_joint = Vec::<JointIndex>::with_capacity(num_aabbs);
+    let mut aabb_index_to_joint_index = Vec::<JointIndex>::with_capacity(num_aabbs);
 
     for (joint_index, _) in optional_aabbs.iter().enumerate() {
         if let Some(aabb) = optional_aabbs[joint_index] {
             aabbs.push(aabb.into());
-            aabb_to_joint.push(joint_index as JointIndex);
+            aabb_index_to_joint_index.push(joint_index as JointIndex);
         }
     }
 
     assert!(aabbs.len() == num_aabbs);
-    assert!(aabb_to_joint.len() == num_aabbs);
+    assert!(aabb_index_to_joint_index.len() == num_aabbs);
 
     SkinnedAabbAsset {
         source: SkinnedAabbSourceAssets {
@@ -292,7 +289,7 @@ fn create_skinned_aabb_asset(
             inverse_bindposes: inverse_bindposes_handle,
         },
         aabbs: aabbs.into(),
-        aabb_to_joint: aabb_to_joint.into(),
+        aabb_index_to_joint_index: aabb_index_to_joint_index.into(),
     }
 }
 
@@ -362,7 +359,7 @@ fn create_skinned_aabb_component(
 }
 
 // If any entities have `Mesh3d` and `SkinnedMesh` components but no
-// `SkinnedAabb`, try to create one.
+// `SkinnedAabb` component, try to create one.
 pub fn create_skinned_aabbs(
     mut commands: Commands,
     mut skinned_aabb_assets: ResMut<Assets<SkinnedAabbAsset>>,
