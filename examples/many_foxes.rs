@@ -1,5 +1,5 @@
 // Based on bevy/examples/stress_tests/many_foxes.rs. Removes a bunch of options to keep
-// things simple. Adds skinned aabb debug rendering - press J for joints and M for meshes.
+// things simple. Adds skinned aabb debug rendering.
 
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
@@ -108,6 +108,20 @@ fn setup(
     mut animation_graphs: ResMut<Assets<AnimationGraph>>,
     foxes: Res<Foxes>,
 ) {
+    commands.spawn((
+        Text::new("J: Toggle Joint AABBs\nM: Toggle Mesh AABBs"),
+        TextFont {
+            font_size: 15.0,
+            ..default()
+        },
+        Node {
+            position_type: PositionType::Absolute,
+            top: Val::Px(12.0),
+            left: Val::Px(12.0),
+            ..default()
+        },
+    ));
+
     // Insert a resource with the current scene information
     let animation_clips = [
         asset_server.load(GltfAssetLabel::Animation(2).from_asset("Fox.glb")),
