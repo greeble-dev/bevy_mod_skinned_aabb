@@ -22,7 +22,9 @@ use bevy_math::{
     ops, Affine3A, Mat4, Quat, Vec3,
 };
 use bevy_mesh::{Mesh, MeshVertexAttributeId};
-use bevy_mod_skinned_aabb::{JointIndex, SkinnedAabbAsset, SkinnedAabbPluginSettings, MAX_INFLUENCES};
+use bevy_mod_skinned_aabb::{
+    JointIndex, SkinnedAabbAsset, SkinnedAabbPluginSettings, MAX_INFLUENCES,
+};
 use bevy_render::{
     mesh::{
         skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
