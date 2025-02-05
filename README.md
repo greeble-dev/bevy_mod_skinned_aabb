@@ -1,6 +1,4 @@
-# Bevy Skinned AABBs
-
-***UNDER CONSTRUCTION - USE AT YOUR OWN RISK***
+# `bevy_mod_skinned_aabb`
 
 A [Bevy](https://github.com/bevyengine/bevy) plugin that automatically calculates AABBs for skinned meshes.
 
@@ -8,23 +6,9 @@ https://github.com/user-attachments/assets/73d236da-43a8-4b63-a19e-f3625d374077
 
 The goal of the plugin is to [fix meshes disappearing due to incorrect AABBs](https://github.com/bevyengine/bevy/issues/4971). It works by pre-calculating AABBs for each joint of the skinned mesh.
 
----
-
-- [Quick Start](#quick-start)
-- [Examples](#examples)
-- [Limitations](#limitations)
-- [FAQ](#faq)
-
 ## Quick Start
 
-To enable skinned AABBs in a Bevy 0.15 app, update your `Cargo.toml` dependencies:
-
-```toml
-[dependencies]
-bevy_mod_skinned_aabb = { git = "https://github.com/greeble-dev/bevy_mod_skinned_aabb.git" }
-```
-
-Then add the plugin to your app:
+To enable skinned AABBs in a Bevy 0.15 app, `cargo add bevy_mod_skinned_aabb` and then:
 
 ```rust
 use bevy_mod_skinned_aabb::prelude::*;
@@ -32,6 +16,7 @@ use bevy_mod_skinned_aabb::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        // Enable skinned AABBs.
         .add_plugins(SkinnedAabbPlugin)
         .run();
 }
@@ -39,7 +24,12 @@ fn main() {
 
 The plugin will automatically detect and update any skinned meshes that are added to the world.
 
-Versions of Bevy prior to 0.15 are not supported.
+## Bevy Compatibility
+
+| bevy   | bevy_mod_skinned_aabb |                                                 |
+|--------|-----------------------|-------------------------------------------------|
+| 0.15   | 0.1.0-alpha.1         | `cargo add bevy_mod_skinned_aabb@0.1.0-alpha.1` |
+| \<0.14 | Not supported         |                                                 |
 
 ## Examples
 
@@ -71,8 +61,8 @@ cargo run --example many_foxes
 
 ### What's the performance impact?
 
-The CPU cost of a mesh playing a single animation increases by roughly 4%. The
-cost of loading a mesh from a glTF increases by less than 1%.
+The per-frame CPU cost of a skinned mesh increases by roughly 4%. The
+cost of loading a skinned mesh from a glTF increases by less than 1%.
 
 ### How can I see the AABBs?
 
