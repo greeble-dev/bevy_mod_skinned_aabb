@@ -35,8 +35,9 @@ fn main() {
             ),
         )
         .add_systems(Startup, setup)
-        .add_systems(Startup, setup_gltf_mesh_scenes)
-        .add_systems(Startup, setup_custom_meshes)
+        .add_systems(Startup, load_gltf_mesh_assets)
+        .add_systems(Startup, spawn_custom_meshes)
+        .add_systems(Update, spawn_gltf_mesh_scenes)
         .add_systems(Update, update_custom_mesh_animation)
         .add_systems(Update, update_turntables)
         .run();
@@ -71,71 +72,99 @@ fn setup(mut commands: Commands) {
     ));
 }
 
-struct GltfMeshInstance {
+#[derive(Copy, Clone, Debug, Default)]
+struct GltfLayout {
     path: &'static str,
     transform: Transform,
-    animation_index: usize,
+    animation_name: &'static str,
     animation_speed: f32,
 }
 
-const GLTF_MESH_INSTANCES: &[GltfMeshInstance] = &[
-    GltfMeshInstance {
+const GLTF_LAYOUTS: &[GltfLayout] = &[
+    GltfLayout {
         path: "Fox.glb",
         transform: Transform::from_xyz(-4.75, 5.5, 0.0).with_scale(Vec3::splat(0.06)),
-        animation_index: 2,
+        animation_name: "Run",
         animation_speed: 0.8,
     },
-    GltfMeshInstance {
+    GltfLayout {
         path: "RecursiveSkeletons.glb",
         transform: Transform::from_xyz(7.0, 5.0, 0.0).with_scale(Vec3::splat(0.04)),
-        animation_index: 0,
+        animation_name: "Track0",
         animation_speed: 0.4,
     },
 ];
 
-// A component with the data needed to play an animation on a gltf mesh.
-//
-// This is spawned alongside the gltf's SceneRoot. Then after the scene has spawned, we iterate over the
-// AnimationPlayer components and walk up the hierarchy to find the Animation component.
 #[derive(Component, Debug, Default)]
-struct GltfAnimation {
+struct GltfPendingAsset {
+    handle: Handle<Gltf>,
+    layout: GltfLayout,
+}
+
+#[derive(Component, Debug, Default)]
+struct GltfPendingAnimation {
     graph_handle: Handle<AnimationGraph>,
     graph_node_index: AnimationNodeIndex,
     speed: f32,
 }
 
-fn setup_gltf_mesh_scenes(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut graphs: ResMut<Assets<AnimationGraph>>,
-) {
-    for mesh in GLTF_MESH_INSTANCES {
-        let scene = SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset(mesh.path)));
-
-        let animation_clip = asset_server
-            .load(GltfAssetLabel::Animation(mesh.animation_index).from_asset(mesh.path));
-
-        let (graph, graph_node_index) = AnimationGraph::from_clip(animation_clip);
-
-        let animation = GltfAnimation {
-            graph_handle: graphs.add(graph),
-            graph_node_index,
-            speed: mesh.animation_speed,
+fn load_gltf_mesh_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
+    for layout in GLTF_LAYOUTS {
+        let pending = GltfPendingAsset {
+            handle: asset_server.load(layout.path),
+            layout: *layout,
         };
 
-        commands
-            .spawn((Turntable, scene, animation, mesh.transform))
-            .observe(setup_gltf_mesh_animations);
+        commands.spawn((pending, layout.transform, Turntable));
     }
 }
 
-fn setup_gltf_mesh_animations(
+fn spawn_gltf_mesh_scenes(
+    mut commands: Commands,
+    query: Query<(Entity, &GltfPendingAsset)>,
+    assets: Res<Assets<Gltf>>,
+    mut graphs: ResMut<Assets<AnimationGraph>>,
+) {
+    for (entity, asset) in query.iter() {
+        let Some(gltf) = assets.get(&asset.handle) else {
+            continue;
+        };
+
+        commands.entity(entity).remove::<GltfPendingAsset>();
+
+        let (Some(scene_handle), Some(animation_handle)) = (
+            gltf.scenes.first(),
+            gltf.named_animations.get(asset.layout.animation_name),
+        ) else {
+            continue;
+        };
+
+        let (graph, graph_node_index) = AnimationGraph::from_clip(animation_handle.clone());
+
+        let animation = GltfPendingAnimation {
+            graph_handle: graphs.add(graph),
+            graph_node_index,
+            speed: asset.layout.animation_speed,
+        };
+
+        commands
+            .entity(entity)
+            .insert((SceneRoot(scene_handle.clone()), animation))
+            .observe(play_gltf_mesh_animations);
+    }
+}
+
+fn play_gltf_mesh_animations(
     trigger: Trigger<SceneInstanceReady>,
     mut commands: Commands,
     children: Query<&Children>,
-    animations: Query<&GltfAnimation>,
+    animations: Query<&GltfPendingAnimation>,
     mut players: Query<&mut AnimationPlayer>,
 ) {
+    commands
+        .entity(trigger.entity())
+        .remove::<GltfPendingAnimation>();
+
     if let Ok(animation) = animations.get(trigger.entity()) {
         for child in children.iter_descendants(trigger.entity()) {
             if let Ok(mut player) = players.get_mut(child) {
@@ -157,7 +186,7 @@ type CustomAnimationId = i8;
 #[derive(Component)]
 struct CustomAnimation(CustomAnimationId);
 
-fn setup_custom_meshes(
+fn spawn_custom_meshes(
     mut commands: Commands,
     mut mesh_assets: ResMut<Assets<Mesh>>,
     mut material_assets: ResMut<Assets<StandardMaterial>>,
