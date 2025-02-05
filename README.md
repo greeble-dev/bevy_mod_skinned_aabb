@@ -4,7 +4,7 @@ A [Bevy](https://github.com/bevyengine/bevy) plugin that automatically calculate
 
 https://github.com/user-attachments/assets/73d236da-43a8-4b63-a19e-f3625d374077
 
-The goal of the plugin is to [fix meshes disappearing due to incorrect AABBs](https://github.com/bevyengine/bevy/issues/4971). It works by pre-calculating AABBs for each joint of a skinned mesh.
+The goal of the plugin is to [fix meshes disappearing due to incorrect AABBs](https://github.com/bevyengine/bevy/issues/4971).
 
 ## Quick Start
 
