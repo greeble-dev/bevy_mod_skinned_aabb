@@ -3,13 +3,17 @@ mod dev;
 
 use bevy_asset::Assets;
 use bevy_ecs::{prelude::*, system::RunSystemOnce};
+use bevy_math::{
+    bounding::{Aabb3d, BoundingVolume},
+    Affine3A, Vec3A,
+};
 use bevy_mesh::{skinning::SkinnedMeshInverseBindposes, Mesh};
 use bevy_mod_skinned_aabb::{
-    create_skinned_aabbs, update_skinned_aabbs, SkinnedAabbPluginSettings,
+    aabb_transformed_by, create_skinned_aabbs, update_skinned_aabbs, SkinnedAabbPluginSettings,
 };
 use bevy_transform::prelude::*;
 use core::time::Duration;
-use criterion::{criterion_group, criterion_main, Bencher, Criterion, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, Bencher, Criterion, Throughput};
 use dev::{
     create_dev_world, create_random_skinned_mesh_assets, spawn_random_skinned_mesh,
     RandomSkinnedMeshType,
@@ -23,6 +27,41 @@ struct MeshParams {
     num_assets: usize,
     num_meshes: usize,
     num_joints: usize,
+}
+
+#[inline(never)]
+fn core_inner(aabbs: &[Aabb3d], joints: &[Affine3A]) -> Aabb3d {
+    let count = aabbs.len();
+
+    let mut t = Aabb3d {
+        min: Vec3A::MAX,
+        max: Vec3A::MIN,
+    };
+
+    for index in 0..count {
+        t = t.merge(&aabb_transformed_by(aabbs[index], joints[index]));
+    }
+
+    t
+}
+
+pub fn core(c: &mut Criterion) {
+    let mut group = c.benchmark_group("core");
+
+    const COUNT: usize = (128 * 1024) / (size_of::<Aabb3d>() + size_of::<Affine3A>());
+
+    group.throughput(Throughput::Elements(COUNT as u64));
+
+    let aabbs = &[Aabb3d {
+        min: Vec3A::ZERO,
+        max: Vec3A::ZERO,
+    }; COUNT];
+
+    let joints = &[Affine3A::IDENTITY; COUNT];
+
+    group.bench_function(format!("count = {COUNT}"), |b| {
+        b.iter(move || black_box(core_inner(aabbs, joints)))
+    });
 }
 
 fn create_meshes(
@@ -60,7 +99,11 @@ fn create_meshes(
     }
 }
 
-fn bench_internal(b: &mut Bencher, settings: SkinnedAabbPluginSettings, mesh_params: &MeshParams) {
+fn systems_internal(
+    b: &mut Bencher,
+    settings: SkinnedAabbPluginSettings,
+    mesh_params: &MeshParams,
+) {
     let world = &mut create_dev_world(settings);
 
     world.insert_resource(*mesh_params);
@@ -71,8 +114,8 @@ fn bench_internal(b: &mut Bencher, settings: SkinnedAabbPluginSettings, mesh_par
     b.iter(move || world.run_system_cached(update_skinned_aabbs).unwrap());
 }
 
-pub fn bench(c: &mut Criterion) {
-    let mut group = c.benchmark_group("bench");
+pub fn systems(c: &mut Criterion) {
+    let mut group = c.benchmark_group("systems");
 
     group.warm_up_time(Duration::from_millis(100));
     group.measurement_time(Duration::from_millis(1000));
@@ -155,12 +198,12 @@ pub fn bench(c: &mut Criterion) {
 
             let settings = SkinnedAabbPluginSettings { parallel };
 
-            group.bench_function(name, |b| bench_internal(b, settings, &mesh_params));
+            group.bench_function(name, |b| systems_internal(b, settings, &mesh_params));
         }
     }
 
     group.finish();
 }
 
-criterion_group!(benches, bench);
+criterion_group!(benches, core, systems);
 criterion_main!(benches);

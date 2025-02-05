@@ -405,7 +405,8 @@ fn aabb_transformed_by(input: Aabb3d, transform: Affine3A) -> Aabb3d {
 // Return an AABB that contains the transformed input AABB.
 //
 // Algorithm from "Transforming Axis-Aligned Bounding Boxes", James Arvo, Graphics Gems (1990).
-fn aabb_transformed_by(input: Aabb3d, transform: Affine3A) -> Aabb3d {
+#[inline]
+pub fn aabb_transformed_by(input: Aabb3d, transform: Affine3A) -> Aabb3d {
     let rs = transform.matrix3;
     let t = transform.translation;
 
