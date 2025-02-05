@@ -1,14 +1,18 @@
-# `bevy_mod_skinned_aabb`
+# bevy_mod_skinned_aabb
 
 A [Bevy](https://github.com/bevyengine/bevy) plugin that automatically calculates AABBs for skinned meshes.
 
 https://github.com/user-attachments/assets/73d236da-43a8-4b63-a19e-f3625d374077
 
-The goal of the plugin is to [fix meshes disappearing due to incorrect AABBs](https://github.com/bevyengine/bevy/issues/4971). It works by pre-calculating AABBs for each joint of the skinned mesh.
+The goal of the plugin is to [fix meshes disappearing due to incorrect AABBs](https://github.com/bevyengine/bevy/issues/4971). It works by pre-calculating AABBs for each joint of a skinned mesh.
 
 ## Quick Start
 
-To enable skinned AABBs in a Bevy 0.15 app, `cargo add bevy_mod_skinned_aabb` and then:
+To enable skinned AABBs in a Bevy 0.15 app:
+
+```sh
+cargo add bevy_mod_skinned_aabb
+```
 
 ```rust
 use bevy_mod_skinned_aabb::prelude::*;
@@ -26,10 +30,10 @@ The plugin will automatically detect and update any skinned meshes that are adde
 
 ## Bevy Compatibility
 
-| bevy   | bevy_mod_skinned_aabb |                                                 |
-|--------|-----------------------|-------------------------------------------------|
-| 0.15   | 0.1.0-alpha.1         | `cargo add bevy_mod_skinned_aabb@0.1.0-alpha.1` |
-| \<0.14 | Not supported         |                                                 |
+| bevy    | bevy_mod_skinned_aabb |                                              |
+|---------|-----------------------|----------------------------------------------|
+| 0.15    | 0.1.0-alpha.1         | `cargo add bevy_mod_skinned_aabb`            |
+| \<=0.14 | Not supported         |                                              |
 
 ## Examples
 
@@ -51,7 +55,7 @@ cargo run --example many_foxes
     - Meshes that only use skinning are safe.
 - Skinned AABBs are conservative but not optimal.
     - They're conservative in that the AABB is guaranteed to contain the mesh's vertices.
-    - But they're not optimal, in that the AABB may be larger than is necessary.
+    - But they're not optimal, in that the AABB may be larger than necessary.
 - Apps that use hundreds of different skinned mesh assets may have performance issues.
     - Each different asset adds some overhead to spawning mesh instances.
     - It's fine to spawn many instances of a small number of assets.
