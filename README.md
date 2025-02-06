@@ -30,10 +30,10 @@ The plugin will automatically detect and update any skinned meshes that are adde
 
 ## Bevy Compatibility
 
-| bevy    | bevy_mod_skinned_aabb |                                              |
-|---------|-----------------------|----------------------------------------------|
-| 0.15    | 0.1.0                 | `cargo add bevy_mod_skinned_aabb`            |
-| \<=0.14 | Not supported         |                                              |
+| bevy    | bevy_mod_skinned_aabb                                               |
+|---------|---------------------------------------------------------------------|
+| 0.15    | 0.1.0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`cargo add bevy_mod_skinned_aabb`     |
+| \<=0.14 | Not supported                                                       |
 
 ## Examples
 
@@ -98,6 +98,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins((
             SkinnedAabbPlugin,
+            // Add the debug rendering but leave it disabled by default.
             SkinnedAabbDebugPlugin::disable_by_default(),
         ))
         .add_systems(
