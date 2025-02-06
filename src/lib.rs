@@ -108,8 +108,8 @@ pub struct SkinnedAabbAsset {
 }
 
 impl SkinnedAabbAsset {
-    pub fn aabb(&self, aabb_index: usize) -> Aabb3d {
-        self.aabbs[aabb_index].into()
+    pub fn aabb(&self, aabb_index: usize) -> PackedAabb3d {
+        self.aabbs[aabb_index]
     }
 
     pub fn num_aabbs(&self) -> usize {
@@ -406,25 +406,17 @@ fn aabb_transformed_by(input: Aabb3d, transform: Affine3A) -> Aabb3d {
 //
 // Algorithm from "Transforming Axis-Aligned Bounding Boxes", James Arvo, Graphics Gems (1990).
 #[inline]
-pub fn aabb_transformed_by(input: Aabb3d, transform: Affine3A) -> Aabb3d {
+pub fn aabb_transformed_by(input: PackedAabb3d, transform: Affine3A) -> Aabb3d {
     let rs = transform.matrix3;
     let t = transform.translation;
 
-    let input_min_x = Vec3A::splat(input.min.x);
-    let input_min_y = Vec3A::splat(input.min.y);
-    let input_min_z = Vec3A::splat(input.min.z);
+    let e_x = rs.x_axis * Vec3A::splat(input.min.x);
+    let e_y = rs.y_axis * Vec3A::splat(input.min.y);
+    let e_z = rs.z_axis * Vec3A::splat(input.min.z);
 
-    let input_max_x = Vec3A::splat(input.max.x);
-    let input_max_y = Vec3A::splat(input.max.y);
-    let input_max_z = Vec3A::splat(input.max.z);
-
-    let e_x = rs.x_axis * input_min_x;
-    let e_y = rs.y_axis * input_min_y;
-    let e_z = rs.z_axis * input_min_z;
-
-    let f_x = rs.x_axis * input_max_x;
-    let f_y = rs.y_axis * input_max_y;
-    let f_z = rs.z_axis * input_max_z;
+    let f_x = rs.x_axis * Vec3A::splat(input.max.x);
+    let f_y = rs.y_axis * Vec3A::splat(input.max.y);
+    let f_z = rs.z_axis * Vec3A::splat(input.max.z);
 
     let min_x = e_x.min(f_x);
     let min_y = e_y.min(f_y);

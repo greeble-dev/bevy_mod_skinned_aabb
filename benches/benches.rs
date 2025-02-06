@@ -5,11 +5,12 @@ use bevy_asset::Assets;
 use bevy_ecs::{prelude::*, system::RunSystemOnce};
 use bevy_math::{
     bounding::{Aabb3d, BoundingVolume},
-    Affine3A, Vec3A,
+    Affine3A, Vec3, Vec3A,
 };
 use bevy_mesh::{skinning::SkinnedMeshInverseBindposes, Mesh};
 use bevy_mod_skinned_aabb::{
-    aabb_transformed_by, create_skinned_aabbs, update_skinned_aabbs, SkinnedAabbPluginSettings,
+    aabb_transformed_by, create_skinned_aabbs, update_skinned_aabbs, PackedAabb3d,
+    SkinnedAabbPluginSettings,
 };
 use bevy_transform::prelude::*;
 use core::time::Duration;
@@ -30,7 +31,7 @@ struct MeshParams {
 }
 
 #[inline(never)]
-fn core_inner(aabbs: &[Aabb3d], joints: &[Affine3A]) -> Aabb3d {
+fn core_inner(aabbs: &[PackedAabb3d], joints: &[Affine3A]) -> Aabb3d {
     let count = aabbs.len();
 
     let mut t = Aabb3d {
@@ -48,13 +49,13 @@ fn core_inner(aabbs: &[Aabb3d], joints: &[Affine3A]) -> Aabb3d {
 pub fn core(c: &mut Criterion) {
     let mut group = c.benchmark_group("core");
 
-    const COUNT: usize = (128 * 1024) / (size_of::<Aabb3d>() + size_of::<Affine3A>());
+    const COUNT: usize = (128 * 1024) / (size_of::<PackedAabb3d>() + size_of::<Affine3A>());
 
     group.throughput(Throughput::Elements(COUNT as u64));
 
-    let aabbs = &[Aabb3d {
-        min: Vec3A::ZERO,
-        max: Vec3A::ZERO,
+    let aabbs = &[PackedAabb3d {
+        min: Vec3::ZERO,
+        max: Vec3::ZERO,
     }; COUNT];
 
     let joints = &[Affine3A::IDENTITY; COUNT];

@@ -109,7 +109,8 @@ fn draw_joint_aabbs(
                 if let Some(world_from_joint) =
                     asset.world_from_joint(aabb_index, skinned_mesh, &joints)
                 {
-                    let joint_from_aabb = gizmo_transform_from_aabb3d(asset.aabb(aabb_index));
+                    let joint_from_aabb =
+                        gizmo_transform_from_aabb3d(asset.aabb(aabb_index).into());
                     let world_from_aabb = world_from_joint * joint_from_aabb;
 
                     gizmos.cuboid(world_from_aabb, Color::WHITE);
