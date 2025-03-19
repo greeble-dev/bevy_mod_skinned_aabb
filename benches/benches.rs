@@ -19,8 +19,7 @@ use dev::{
     create_dev_world, create_random_skinned_mesh_assets, spawn_random_skinned_mesh,
     RandomSkinnedMeshType,
 };
-use rand::SeedableRng;
-use rand_chacha::ChaCha8Rng;
+use rand::{rngs::StdRng, SeedableRng};
 use std::iter::repeat_with;
 
 #[derive(Resource, Copy, Clone)]
@@ -71,7 +70,7 @@ fn create_meshes(
     mut inverse_bindposes_assets: ResMut<Assets<SkinnedMeshInverseBindposes>>,
     params: Res<MeshParams>,
 ) {
-    let mut rng = ChaCha8Rng::seed_from_u64(732935);
+    let mut rng = StdRng::seed_from_u64(732935);
     let base_entity = commands.spawn(Transform::IDENTITY).id();
 
     let assets = repeat_with(|| {

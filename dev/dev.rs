@@ -34,9 +34,9 @@ use bevy_render::{mesh::Mesh3d, primitives::Aabb, view::visibility::Visibility};
 use bevy_transform::components::{GlobalTransform, Transform};
 use rand::{
     distributions::{Distribution, Slice, Uniform},
+    rngs::StdRng,
     Rng, SeedableRng,
 };
-use rand_chacha::ChaCha8Rng;
 use std::{borrow::Borrow, time::Duration};
 use std::{
     f32::consts::TAU,
@@ -444,7 +444,7 @@ pub fn spawn_random_mesh_selection(
     mut material_assets: ResMut<Assets<StandardMaterial>>,
     mut inverse_bindposes_assets: ResMut<Assets<SkinnedMeshInverseBindposes>>,
 ) {
-    let mut rng = ChaCha8Rng::seed_from_u64(732935);
+    let mut rng = StdRng::seed_from_u64(732935);
 
     let material = MeshMaterial3d(material_assets.add(StandardMaterial {
         base_color: Color::WHITE,
@@ -526,8 +526,8 @@ pub fn update_random_mesh_animations(
 
         let noise = animation.noise.sample(time.elapsed_secs());
 
-        let t0 = random_transform_maybe_outlier(&mut ChaCha8Rng::seed_from_u64(noise.keys[0]));
-        let t1 = random_transform_maybe_outlier(&mut ChaCha8Rng::seed_from_u64(noise.keys[1]));
+        let t0 = random_transform_maybe_outlier(&mut StdRng::seed_from_u64(noise.keys[0]));
+        let t1 = random_transform_maybe_outlier(&mut StdRng::seed_from_u64(noise.keys[1]));
 
         // Blend between the transforms with a nice ease in/out over 2/3rds of a
         // second, then hold for 1/3rd of a second.
