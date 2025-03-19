@@ -1,22 +1,25 @@
 use bevy_app::{App, Plugin, PostUpdate, Update};
 use bevy_asset::{Asset, AssetApp, AssetId, Assets, Handle};
-use bevy_ecs::prelude::*;
+use bevy_ecs::{
+    component::Component,
+    entity::Entity,
+    query::Without,
+    schedule::IntoSystemConfigs,
+    system::{Commands, Query, Res, ResMut, Resource},
+    world::Mut,
+};
 #[cfg(feature = "trace")]
 use bevy_log::info_span;
 use bevy_math::{
     bounding::{Aabb3d, BoundingVolume},
     Affine3A, Vec3, Vec3A,
 };
-use bevy_mesh::Mesh;
-use bevy_reflect::prelude::*;
-use bevy_render::{
-    mesh::{
-        skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
-        Mesh3d, VertexAttributeValues,
-    },
-    primitives::Aabb,
-    view::VisibilitySystems,
+use bevy_mesh::{
+    skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
+    Mesh, VertexAttributeValues,
 };
+use bevy_reflect::{Reflect, TypePath};
+use bevy_render::{mesh::Mesh3d, primitives::Aabb, view::VisibilitySystems};
 use bevy_transform::{components::GlobalTransform, TransformSystem};
 
 pub mod debug;

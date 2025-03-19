@@ -6,8 +6,10 @@
 #![allow(dead_code)]
 
 use bevy::{
-    prelude::*,
+    hierarchy::BuildChildren,
+    pbr::{MeshMaterial3d, StandardMaterial},
     tasks::{ComputeTaskPool, TaskPool},
+    time::{Time, Virtual},
 };
 use bevy_asset::{Assets, Handle, RenderAssetUsages};
 use bevy_color::Color;
@@ -21,18 +23,14 @@ use bevy_math::{
     curve::{Curve, EaseFunction, EasingCurve},
     ops, Affine3A, Mat4, Quat, Vec3,
 };
-use bevy_mesh::{Mesh, MeshVertexAttributeId};
+use bevy_mesh::{
+    skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
+    Mesh, MeshVertexAttributeId, PrimitiveTopology, VertexAttributeValues,
+};
 use bevy_mod_skinned_aabb::{
     JointIndex, SkinnedAabbAsset, SkinnedAabbPluginSettings, MAX_INFLUENCES,
 };
-use bevy_render::{
-    mesh::{
-        skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
-        Mesh3d, PrimitiveTopology, VertexAttributeValues,
-    },
-    primitives::Aabb,
-    view::visibility::Visibility,
-};
+use bevy_render::{mesh::Mesh3d, primitives::Aabb, view::visibility::Visibility};
 use bevy_transform::components::{GlobalTransform, Transform};
 use rand::{
     distributions::{Distribution, Slice, Uniform},

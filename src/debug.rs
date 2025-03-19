@@ -1,11 +1,17 @@
 use bevy_app::{App, Plugin, PostUpdate};
 use bevy_asset::Assets;
 use bevy_color::{Color, Oklcha};
-use bevy_ecs::prelude::*;
+use bevy_ecs::{
+    entity::Entity,
+    query::With,
+    schedule::IntoSystemConfigs,
+    system::{Query, Res, ResMut, Resource},
+};
 use bevy_gizmos::{config::GizmoConfigGroup, gizmos::Gizmos, AppGizmoBuilder};
 use bevy_math::{bounding::Aabb3d, Affine3A, Vec3A};
+use bevy_mesh::skinning::SkinnedMesh;
 use bevy_reflect::Reflect;
-use bevy_render::{mesh::skinning::SkinnedMesh, primitives::Aabb};
+use bevy_render::primitives::Aabb;
 use bevy_transform::{components::GlobalTransform, TransformSystem};
 
 use crate::{SkinnedAabb, SkinnedAabbAsset};
