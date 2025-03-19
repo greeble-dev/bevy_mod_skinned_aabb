@@ -36,7 +36,7 @@ use bevy_render::{
 use bevy_transform::components::{GlobalTransform, Transform};
 use rand::{
     distributions::{Distribution, Slice, Uniform},
-    Rng, RngCore, SeedableRng,
+    Rng, SeedableRng,
 };
 use rand_chacha::ChaCha8Rng;
 use std::{borrow::Borrow, time::Duration};
@@ -47,7 +47,7 @@ use std::{
 use std::{iter::once, iter::repeat_with};
 
 // Return a Vec3 with each element sampled from the given distribution.
-fn random_vec3<T: Borrow<f32>, D: Distribution<T>>(rng: &mut dyn RngCore, dist: D) -> Vec3 {
+fn random_vec3<T: Borrow<f32>, D: Distribution<T>>(rng: &mut impl Rng, dist: D) -> Vec3 {
     Vec3::new(
         *rng.sample(&dist).borrow(),
         *rng.sample(&dist).borrow(),
@@ -56,21 +56,21 @@ fn random_vec3<T: Borrow<f32>, D: Distribution<T>>(rng: &mut dyn RngCore, dist: 
 }
 
 // Return a Vec3 with each element uniformly sampled from the set (-1.0, 0.0, 1.0).
-fn random_vec3_snorm_outlier(rng: &mut dyn RngCore) -> Vec3 {
+fn random_vec3_snorm_outlier(rng: &mut impl Rng) -> Vec3 {
     let dist = Slice::new(&[-1.0f32, 0.0f32, 1.0f32]).unwrap();
 
     random_vec3(rng, dist)
 }
 
 // Return a Vec3 with each element uniformly sampled from the range [-1.0, 1.0].
-pub fn random_vec3_snorm(rng: &mut dyn RngCore) -> Vec3 {
+pub fn random_vec3_snorm(rng: &mut impl Rng) -> Vec3 {
     let dist = Uniform::new_inclusive(-1.0f32, 1.0f32);
 
     random_vec3(rng, dist)
 }
 
 // 50/50 chance of returning random_vec3_snorm or random_vec3_snorm_outlier.
-fn random_vec3_snorm_maybe_outlier(rng: &mut dyn RngCore) -> Vec3 {
+fn random_vec3_snorm_maybe_outlier(rng: &mut impl Rng) -> Vec3 {
     if rng.gen::<bool>() {
         random_vec3_snorm(rng)
     } else {
@@ -85,7 +85,7 @@ fn random_vec3_snorm_maybe_outlier(rng: &mut dyn RngCore) -> Vec3 {
 // We could have used Glam's default random instead. But it's implemented as a
 // uniformly sampled axis and angle and so is not uniformly distributed on the
 // 3-sphere. Which is probably fine for our purposes, but hey.
-fn random_quat(rng: &mut dyn RngCore) -> Quat {
+fn random_quat(rng: &mut impl Rng) -> Quat {
     let r0 = rng.gen_range(0.0f32..TAU);
     let r1 = rng.gen_range(0.0f32..TAU);
     let r2 = rng.gen_range(0.0f32..1.0f32);
@@ -101,7 +101,7 @@ fn random_quat(rng: &mut dyn RngCore) -> Quat {
 
 // Return a random quaternion that's identity or a 90/180 degree rotation
 // around a single axis.
-fn random_quat_outlier(rng: &mut dyn RngCore) -> Quat {
+fn random_quat_outlier(rng: &mut impl Rng) -> Quat {
     let a90 = 1.0 / 2.0f32.sqrt();
 
     let values = [
@@ -121,7 +121,7 @@ fn random_quat_outlier(rng: &mut dyn RngCore) -> Quat {
 }
 
 // 50/50 chance of returning random_quat or random_quat_outlier.
-fn random_quat_maybe_outlier(rng: &mut dyn RngCore) -> Quat {
+fn random_quat_maybe_outlier(rng: &mut impl Rng) -> Quat {
     if rng.gen::<bool>() {
         random_quat(rng)
     } else {
@@ -129,7 +129,7 @@ fn random_quat_maybe_outlier(rng: &mut dyn RngCore) -> Quat {
     }
 }
 
-fn random_transform(rng: &mut dyn RngCore) -> Transform {
+fn random_transform(rng: &mut impl Rng) -> Transform {
     let translation = random_vec3_snorm(rng) * 0.5;
     let rotation: Quat = random_quat(rng);
     let scale = random_vec3_snorm(rng);
@@ -141,7 +141,7 @@ fn random_transform(rng: &mut dyn RngCore) -> Transform {
     }
 }
 
-fn random_transform_maybe_outlier(rng: &mut dyn RngCore) -> Transform {
+fn random_transform_maybe_outlier(rng: &mut impl Rng) -> Transform {
     let translation = random_vec3_snorm_maybe_outlier(rng) * 0.5;
     let rotation: Quat = random_quat_maybe_outlier(rng);
     let scale = random_vec3_snorm_maybe_outlier(rng);
@@ -160,7 +160,7 @@ pub enum RandomMeshError {
 // Create a mesh with random triangles skinned to random joints with varying
 // weights.
 fn create_random_soft_skinned_mesh(
-    rng: &mut dyn RngCore,
+    rng: &mut impl Rng,
     num_tris: usize,
     num_unskinned_joints: usize,
     num_skinned_joints: usize,
@@ -211,7 +211,7 @@ fn create_random_soft_skinned_mesh(
 
 // Create a mesh with a triangle hard skinned to each joint.
 fn create_random_hard_skinned_mesh(
-    rng: &mut dyn RngCore,
+    rng: &mut impl Rng,
     num_unskinned_joints: usize,
     num_skinned_joints: usize,
 ) -> Result<Mesh, RandomMeshError> {
@@ -264,7 +264,7 @@ fn create_random_hard_skinned_mesh(
 }
 
 fn create_random_inverse_bindposes(
-    rng: &mut dyn RngCore,
+    rng: &mut impl Rng,
     num_joints: usize,
 ) -> SkinnedMeshInverseBindposes {
     // Leaving the root as identity makes it more visually pleasing.
@@ -287,7 +287,7 @@ pub enum RandomSkinnedMeshType {
 pub fn create_random_skinned_mesh_assets(
     mesh_assets: &mut Assets<Mesh>,
     inverse_bindposes_assets: &mut Assets<SkinnedMeshInverseBindposes>,
-    rng: &mut dyn RngCore,
+    rng: &mut impl Rng,
     mesh_type: RandomSkinnedMeshType,
     num_unskinned_joints: usize,
     num_skinned_joints: usize,
@@ -363,7 +363,7 @@ impl RandomMeshAnimation {
 
 pub fn spawn_joints(
     commands: &mut Commands,
-    rng: &mut dyn RngCore,
+    rng: &mut impl Rng,
     base: Entity,
     num: usize,
 ) -> Vec<Entity> {
@@ -392,7 +392,7 @@ pub fn spawn_joints(
 
 pub fn spawn_random_skinned_mesh(
     commands: &mut Commands,
-    rng: &mut dyn RngCore,
+    rng: &mut impl Rng,
     base: Entity,
     transform: Transform,
     assets: &SkinnedMeshAssets,
@@ -418,7 +418,7 @@ pub fn create_and_spawn_random_skinned_mesh(
     commands: &mut Commands,
     mesh_assets: &mut Assets<Mesh>,
     inverse_bindposes_assets: &mut Assets<SkinnedMeshInverseBindposes>,
-    rng: &mut dyn RngCore,
+    rng: &mut impl Rng,
     base: Entity,
     transform: Transform,
     mesh_type: RandomSkinnedMeshType,
