@@ -54,9 +54,9 @@ struct CpuSkinningMarker;
 
 fn cpu_skinning_delete_existing(
     mut commands: Commands,
-    query: Query<(Entity, &CpuSkinningMarker)>,
+    query: Query<Entity, With<CpuSkinningMarker>>,
 ) {
-    for (entity, _) in query.iter() {
+    for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
 }

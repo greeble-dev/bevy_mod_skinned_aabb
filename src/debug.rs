@@ -121,16 +121,14 @@ fn draw_joint_aabbs(
 }
 
 fn draw_mesh_aabbs(
-    query: Query<(Entity, &SkinnedAabb, &Aabb, &GlobalTransform)>,
+    query: Query<(Entity, &Aabb, &GlobalTransform), With<SkinnedAabb>>,
     mut gizmos: Gizmos<SkinnedAabbGizmos>,
 ) {
-    query
-        .iter()
-        .for_each(|(entity, _, aabb, world_from_entity)| {
-            let entity_from_aabb = gizmo_transform_from_aabb(*aabb);
-            let world_from_aabb = world_from_entity.affine() * entity_from_aabb;
-            let color = Oklcha::sequential_dispersed(entity.index());
+    query.iter().for_each(|(entity, aabb, world_from_entity)| {
+        let entity_from_aabb = gizmo_transform_from_aabb(*aabb);
+        let world_from_aabb = world_from_entity.affine() * entity_from_aabb;
+        let color = Oklcha::sequential_dispersed(entity.index());
 
-            gizmos.cuboid(world_from_aabb, color);
-        })
+        gizmos.cuboid(world_from_aabb, color);
+    })
 }
