@@ -20,22 +20,23 @@ use bevy_ecs::{
     world::World,
 };
 use bevy_math::{
+    Affine3A, Mat4, Quat, Vec3,
     curve::{Curve, EaseFunction, EasingCurve},
-    ops, Affine3A, Mat4, Quat, Vec3,
+    ops,
 };
 use bevy_mesh::{
-    skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
     Mesh, MeshVertexAttributeId, PrimitiveTopology, VertexAttributeValues,
+    skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
 };
 use bevy_mod_skinned_aabb::{
-    JointIndex, SkinnedAabbAsset, SkinnedAabbPluginSettings, MAX_INFLUENCES,
+    JointIndex, MAX_INFLUENCES, SkinnedAabbAsset, SkinnedAabbPluginSettings,
 };
 use bevy_render::{mesh::Mesh3d, primitives::Aabb, view::visibility::Visibility};
 use bevy_transform::components::{GlobalTransform, Transform};
 use rand::{
+    Rng, SeedableRng,
     distributions::{Distribution, Slice, Uniform},
     rngs::StdRng,
-    Rng, SeedableRng,
 };
 use std::{borrow::Borrow, time::Duration};
 use std::{

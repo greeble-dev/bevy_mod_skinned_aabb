@@ -11,22 +11,22 @@ use bevy_ecs::{
 #[cfg(feature = "trace")]
 use bevy_log::info_span;
 use bevy_math::{
-    bounding::{Aabb3d, BoundingVolume},
     Affine3A, Vec3, Vec3A,
+    bounding::{Aabb3d, BoundingVolume},
 };
 use bevy_mesh::{
-    skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
     Mesh, VertexAttributeValues,
+    skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
 };
 use bevy_reflect::{Reflect, TypePath};
 use bevy_render::{mesh::Mesh3d, primitives::Aabb, view::VisibilitySystems};
-use bevy_transform::{components::GlobalTransform, TransformSystem};
+use bevy_transform::{TransformSystem, components::GlobalTransform};
 
 pub mod debug;
 
 pub mod prelude {
-    pub use crate::debug::prelude::*;
     pub use crate::SkinnedAabbPlugin;
+    pub use crate::debug::prelude::*;
 }
 
 #[derive(Default)]

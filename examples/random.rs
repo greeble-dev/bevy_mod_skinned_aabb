@@ -3,8 +3,8 @@ mod dev;
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_mod_skinned_aabb::{
-    debug::{toggle_draw_joint_aabbs, toggle_draw_mesh_aabbs, SkinnedAabbDebugPlugin},
     SkinnedAabbPlugin,
+    debug::{SkinnedAabbDebugPlugin, toggle_draw_joint_aabbs, toggle_draw_mesh_aabbs},
 };
 use dev::{spawn_random_mesh_selection, update_random_mesh_animations};
 

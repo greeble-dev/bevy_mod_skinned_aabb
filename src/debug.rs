@@ -7,18 +7,18 @@ use bevy_ecs::{
     schedule::IntoSystemConfigs,
     system::{Query, Res, ResMut, Resource},
 };
-use bevy_gizmos::{config::GizmoConfigGroup, gizmos::Gizmos, AppGizmoBuilder};
-use bevy_math::{bounding::Aabb3d, Affine3A, Vec3A};
+use bevy_gizmos::{AppGizmoBuilder, config::GizmoConfigGroup, gizmos::Gizmos};
+use bevy_math::{Affine3A, Vec3A, bounding::Aabb3d};
 use bevy_mesh::skinning::SkinnedMesh;
 use bevy_reflect::Reflect;
 use bevy_render::primitives::Aabb;
-use bevy_transform::{components::GlobalTransform, TransformSystem};
+use bevy_transform::{TransformSystem, components::GlobalTransform};
 
 use crate::{SkinnedAabb, SkinnedAabbAsset};
 
 pub mod prelude {
     pub use crate::debug::{
-        toggle_draw_joint_aabbs, toggle_draw_mesh_aabbs, SkinnedAabbDebugPlugin,
+        SkinnedAabbDebugPlugin, toggle_draw_joint_aabbs, toggle_draw_mesh_aabbs,
     };
 }
 

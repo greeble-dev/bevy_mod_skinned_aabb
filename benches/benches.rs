@@ -4,22 +4,22 @@ mod dev;
 use bevy_asset::Assets;
 use bevy_ecs::{prelude::*, system::RunSystemOnce};
 use bevy_math::{
-    bounding::{Aabb3d, BoundingVolume},
     Affine3A, Vec3, Vec3A,
+    bounding::{Aabb3d, BoundingVolume},
 };
-use bevy_mesh::{skinning::SkinnedMeshInverseBindposes, Mesh};
+use bevy_mesh::{Mesh, skinning::SkinnedMeshInverseBindposes};
 use bevy_mod_skinned_aabb::{
-    aabb_transformed_by, create_skinned_aabbs, update_skinned_aabbs, PackedAabb3d,
-    SkinnedAabbPluginSettings,
+    PackedAabb3d, SkinnedAabbPluginSettings, aabb_transformed_by, create_skinned_aabbs,
+    update_skinned_aabbs,
 };
 use bevy_transform::prelude::*;
 use core::time::Duration;
-use criterion::{black_box, criterion_group, criterion_main, Bencher, Criterion, Throughput};
+use criterion::{Bencher, Criterion, Throughput, black_box, criterion_group, criterion_main};
 use dev::{
-    create_dev_world, create_random_skinned_mesh_assets, spawn_random_skinned_mesh,
-    RandomSkinnedMeshType,
+    RandomSkinnedMeshType, create_dev_world, create_random_skinned_mesh_assets,
+    spawn_random_skinned_mesh,
 };
-use rand::{rngs::StdRng, SeedableRng};
+use rand::{SeedableRng, rngs::StdRng};
 use std::iter::repeat_with;
 
 #[derive(Resource, Copy, Clone)]
@@ -186,9 +186,9 @@ pub fn systems(c: &mut Criterion) {
             }
 
             let name = format!(
-                        "(parallel = {}, assets = {}, joints total = {}, joints per mesh = {}, meshes = {})",
-                        parallel, num_assets, num_joints_total, num_joints, num_meshes,
-                    );
+                "(parallel = {}, assets = {}, joints total = {}, joints per mesh = {}, meshes = {})",
+                parallel, num_assets, num_joints_total, num_joints, num_meshes,
+            );
 
             let mesh_params = MeshParams {
                 num_assets,

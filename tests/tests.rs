@@ -6,7 +6,7 @@ use bevy_ecs::system::RunSystemOnce;
 use bevy_math::Vec3A;
 use bevy_mesh::skinning::{SkinnedMesh, SkinnedMeshInverseBindposes};
 use bevy_mod_skinned_aabb::{
-    create_skinned_aabbs, update_skinned_aabbs, SkinnedAabbPluginSettings,
+    SkinnedAabbPluginSettings, create_skinned_aabbs, update_skinned_aabbs,
 };
 use bevy_render::{mesh::MeshAabb, primitives::Aabb};
 use dev::{create_dev_world, skin, spawn_random_mesh_selection, update_random_mesh_animations};

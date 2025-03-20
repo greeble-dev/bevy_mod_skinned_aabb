@@ -3,8 +3,8 @@ use bevy::{
     input::common_conditions::input_just_pressed,
     prelude::*,
     render::mesh::{
-        skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
         PrimitiveTopology, VertexAttributeValues,
+        skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
     },
     scene::SceneInstanceReady,
 };
