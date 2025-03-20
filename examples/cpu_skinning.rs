@@ -9,8 +9,8 @@ use dev::{skin, spawn_random_mesh_selection, update_random_mesh_animations};
 fn main() {
     App::new()
         .insert_resource(AmbientLight {
-            color: Color::WHITE,
             brightness: 2000.,
+            ..Default::default()
         })
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
@@ -57,7 +57,7 @@ fn cpu_skinning_delete_existing(
     query: Query<Entity, With<CpuSkinningMarker>>,
 ) {
     for entity in query.iter() {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }
 

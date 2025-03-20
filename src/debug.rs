@@ -2,10 +2,12 @@ use bevy_app::{App, Plugin, PostUpdate};
 use bevy_asset::Assets;
 use bevy_color::{Color, Oklcha};
 use bevy_ecs::{
+    change_detection::{Res, ResMut},
     entity::Entity,
     query::With,
-    schedule::IntoSystemConfigs,
-    system::{Query, Res, ResMut, Resource},
+    resource::Resource,
+    schedule::IntoScheduleConfigs,
+    system::Query,
 };
 use bevy_gizmos::{AppGizmoBuilder, config::GizmoConfigGroup, gizmos::Gizmos};
 use bevy_math::{Affine3A, Vec3A, bounding::Aabb3d};

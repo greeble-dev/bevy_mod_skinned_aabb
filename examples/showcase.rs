@@ -23,8 +23,8 @@ fn main() {
         .add_plugins(SkinnedAabbPlugin)
         .add_plugins(SkinnedAabbDebugPlugin::enable_by_default())
         .insert_resource(AmbientLight {
-            color: Color::WHITE,
             brightness: 2000.0,
+            ..Default::default()
         })
         .add_systems(
             Update,
@@ -162,11 +162,11 @@ fn play_gltf_mesh_animations(
     mut players: Query<&mut AnimationPlayer>,
 ) {
     commands
-        .entity(trigger.entity())
+        .entity(trigger.target())
         .remove::<GltfPendingAnimation>();
 
-    if let Ok(animation) = animations.get(trigger.entity()) {
-        for child in children.iter_descendants(trigger.entity()) {
+    if let Ok(animation) = animations.get(trigger.target()) {
+        for child in children.iter_descendants(trigger.target()) {
             if let Ok(mut player) = players.get_mut(child) {
                 player
                     .play(animation.graph_node_index)
@@ -298,9 +298,16 @@ fn spawn_custom_meshes(
                 .id(),
         ];
 
-        commands.entity(joints[0]).set_parent(base_entity);
-        commands.entity(joints[1]).set_parent(joints[0]);
-        commands.entity(joints[2]).set_parent(joints[1]);
+        commands.entity(joints[0]).insert(ChildOf {
+            parent: base_entity,
+        });
+
+        commands
+            .entity(joints[1])
+            .insert(ChildOf { parent: joints[0] });
+        commands
+            .entity(joints[2])
+            .insert(ChildOf { parent: joints[1] });
 
         let mesh_entity = commands
             .spawn((
@@ -318,7 +325,9 @@ fn spawn_custom_meshes(
             ))
             .id();
 
-        commands.entity(mesh_entity).set_parent(base_entity);
+        commands.entity(mesh_entity).insert(ChildOf {
+            parent: base_entity,
+        });
     }
 }
 

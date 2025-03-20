@@ -1,11 +1,13 @@
 use bevy_app::{App, Plugin, PostUpdate, Update};
 use bevy_asset::{Asset, AssetApp, AssetId, Assets, Handle};
 use bevy_ecs::{
+    change_detection::{Res, ResMut},
     component::Component,
     entity::Entity,
     query::Without,
-    schedule::IntoSystemConfigs,
-    system::{Commands, Query, Res, ResMut, Resource},
+    resource::Resource,
+    schedule::IntoScheduleConfigs,
+    system::{Commands, Query},
     world::Mut,
 };
 #[cfg(feature = "trace")]

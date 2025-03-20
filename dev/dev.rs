@@ -6,7 +6,6 @@
 #![allow(dead_code)]
 
 use bevy::{
-    hierarchy::BuildChildren,
     pbr::{MeshMaterial3d, StandardMaterial},
     tasks::{ComputeTaskPool, TaskPool},
     time::{Time, Virtual},
@@ -14,9 +13,11 @@ use bevy::{
 use bevy_asset::{Assets, Handle, RenderAssetUsages};
 use bevy_color::Color;
 use bevy_ecs::{
+    change_detection::{Res, ResMut},
     component::Component,
     entity::Entity,
-    system::{Commands, Query, Res, ResMut},
+    hierarchy::ChildOf,
+    system::{Commands, Query},
     world::World,
 };
 use bevy_math::{
@@ -372,7 +373,7 @@ pub fn spawn_joints(
 
     let root_joint = commands
         .spawn((Transform::IDENTITY, RandomMeshAnimation::new(rng.r#gen())))
-        .set_parent(base)
+        .insert(ChildOf { parent: base })
         .id();
 
     joints.push(root_joint);
@@ -380,7 +381,7 @@ pub fn spawn_joints(
     for _ in 1..num {
         let joint = commands
             .spawn((Transform::IDENTITY, RandomMeshAnimation::new(rng.r#gen())))
-            .set_parent(root_joint)
+            .insert(ChildOf { parent: root_joint })
             .id();
 
         joints.push(joint);
@@ -408,7 +409,7 @@ pub fn spawn_random_skinned_mesh(
             },
             Aabb::default(),
         ))
-        .set_parent(base)
+        .insert(ChildOf { parent: base })
         .id()
 }
 

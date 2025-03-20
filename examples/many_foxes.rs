@@ -38,7 +38,7 @@ fn main() {
                 }),
                 ..default()
             }),
-            FrameTimeDiagnosticsPlugin,
+            FrameTimeDiagnosticsPlugin::default(),
             LogDiagnosticsPlugin::default(),
         ))
         .add_plugins((
@@ -56,8 +56,8 @@ fn main() {
             sync: false,
         })
         .insert_resource(AmbientLight {
-            color: Color::WHITE,
             brightness: 2000.0,
+            ..Default::default()
         })
         .add_systems(Startup, setup)
         .add_systems(Update, (setup_scene_once_loaded, update_fox_rings))
