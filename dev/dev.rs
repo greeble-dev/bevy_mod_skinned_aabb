@@ -69,7 +69,7 @@ pub fn random_vec3_snorm(rng: &mut impl Rng) -> Vec3 {
 
 // 50/50 chance of returning random_vec3_snorm or random_vec3_snorm_outlier.
 fn random_vec3_snorm_maybe_outlier(rng: &mut impl Rng) -> Vec3 {
-    if rng.gen::<bool>() {
+    if rng.r#gen::<bool>() {
         random_vec3_snorm(rng)
     } else {
         random_vec3_snorm_outlier(rng)
@@ -120,7 +120,7 @@ fn random_quat_outlier(rng: &mut impl Rng) -> Quat {
 
 // 50/50 chance of returning random_quat or random_quat_outlier.
 fn random_quat_maybe_outlier(rng: &mut impl Rng) -> Quat {
-    if rng.gen::<bool>() {
+    if rng.r#gen::<bool>() {
         random_quat(rng)
     } else {
         random_quat_outlier(rng)
@@ -370,7 +370,7 @@ pub fn spawn_joints(
     let mut joints: Vec<Entity> = Vec::with_capacity(num);
 
     let root_joint = commands
-        .spawn((Transform::IDENTITY, RandomMeshAnimation::new(rng.gen())))
+        .spawn((Transform::IDENTITY, RandomMeshAnimation::new(rng.r#gen())))
         .set_parent(base)
         .id();
 
@@ -378,7 +378,7 @@ pub fn spawn_joints(
 
     for _ in 1..num {
         let joint = commands
-            .spawn((Transform::IDENTITY, RandomMeshAnimation::new(rng.gen())))
+            .spawn((Transform::IDENTITY, RandomMeshAnimation::new(rng.r#gen())))
             .set_parent(root_joint)
             .id();
 
