@@ -30,10 +30,11 @@ The plugin will automatically detect and update any skinned meshes that are adde
 
 ## Bevy Compatibility
 
-| bevy    | bevy_mod_skinned_aabb                                               |
-|---------|---------------------------------------------------------------------|
-| 0.15    | 0.1.0 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`cargo add bevy_mod_skinned_aabb`     |
-| \<=0.14 | Not supported                                                       |
+| bevy          | bevy_mod_skinned_aabb |
+|---------------|-----------------------|
+| `0.16.0-rc.1` | `0.2.0-rc.1`          |
+| `0.15`        | `0.1.0`               |
+| `<=0.14`      | Not supported         |
 
 ## Examples
 
