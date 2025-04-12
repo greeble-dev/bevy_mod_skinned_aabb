@@ -298,16 +298,10 @@ fn spawn_custom_meshes(
                 .id(),
         ];
 
-        commands.entity(joints[0]).insert(ChildOf {
-            parent: base_entity,
-        });
+        commands.entity(joints[0]).insert(ChildOf(base_entity));
 
-        commands
-            .entity(joints[1])
-            .insert(ChildOf { parent: joints[0] });
-        commands
-            .entity(joints[2])
-            .insert(ChildOf { parent: joints[1] });
+        commands.entity(joints[1]).insert(ChildOf(joints[0]));
+        commands.entity(joints[2]).insert(ChildOf(joints[1]));
 
         let mesh_entity = commands
             .spawn((
@@ -325,9 +319,7 @@ fn spawn_custom_meshes(
             ))
             .id();
 
-        commands.entity(mesh_entity).insert(ChildOf {
-            parent: base_entity,
-        });
+        commands.entity(mesh_entity).insert(ChildOf(base_entity));
     }
 }
 

@@ -373,7 +373,7 @@ pub fn spawn_joints(
 
     let root_joint = commands
         .spawn((Transform::IDENTITY, RandomMeshAnimation::new(rng.r#gen())))
-        .insert(ChildOf { parent: base })
+        .insert(ChildOf(base))
         .id();
 
     joints.push(root_joint);
@@ -381,7 +381,7 @@ pub fn spawn_joints(
     for _ in 1..num {
         let joint = commands
             .spawn((Transform::IDENTITY, RandomMeshAnimation::new(rng.r#gen())))
-            .insert(ChildOf { parent: root_joint })
+            .insert(ChildOf(root_joint))
             .id();
 
         joints.push(joint);
@@ -409,7 +409,7 @@ pub fn spawn_random_skinned_mesh(
             },
             Aabb::default(),
         ))
-        .insert(ChildOf { parent: base })
+        .insert(ChildOf(base))
         .id()
 }
 
