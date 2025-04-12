@@ -32,6 +32,8 @@ The plugin will automatically detect and update any skinned meshes that are adde
 
 | bevy          | bevy_mod_skinned_aabb |
 |---------------|-----------------------|
+| `0.16.0-rc.4` | `0.2.0-rc.4`          |
+| `0.16.0-rc.3` | `0.2.0-rc.1`          |
 | `0.16.0-rc.2` | `0.2.0-rc.1`          |
 | `0.16.0-rc.1` | `0.2.0-rc.1`          |
 | `0.15`        | `0.1`                 |
