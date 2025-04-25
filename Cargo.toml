@@ -1,6 +1,6 @@
 [package]
 name = "bevy_mod_skinned_aabb"
-version = "0.2.0-rc.4"
+version = "0.2.0"
 description = "A Bevy plugin that automatically calculates AABBs for skinned meshes"
 authors = ["Greeble <greeble@greeble.dev>"]
 repository = "https://github.com/greeble-dev/bevy_mod_skinned_aabb"
@@ -11,24 +11,24 @@ categories = ["game-development"]
 include = ["/src", "/LICENSE-MIT", "/LICENSE-APACHE", "/README.md"]
 
 [dependencies]
-bevy_app = { version = "0.16.0-rc.4", default-features = false }
-bevy_asset = { version = "0.16.0-rc.4", default-features = false }
-bevy_color = { version = "0.16.0-rc.4", default-features = false }
-bevy_derive = { version = "0.16.0-rc.4", default-features = false }
-bevy_ecs = { version = "0.16.0-rc.4", default-features = false }
-bevy_gizmos = { version = "0.16.0-rc.4", default-features = false }
-bevy_log = { version = "0.16.0-rc.4", default-features = false }
-bevy_math = { version = "0.16.0-rc.4", default-features = false }
-bevy_mesh = { version = "0.16.0-rc.4", default-features = false }
-bevy_reflect = { version = "0.16.0-rc.4", default-features = false }
-bevy_render = { version = "0.16.0-rc.4", default-features = false }
-bevy_transform = { version = "0.16.0-rc.4", default-features = false }
+bevy_app = { version = "0.16", default-features = false }
+bevy_asset = { version = "0.16", default-features = false }
+bevy_color = { version = "0.16", default-features = false }
+bevy_derive = { version = "0.16", default-features = false }
+bevy_ecs = { version = "0.16", default-features = false }
+bevy_gizmos = { version = "0.16", default-features = false }
+bevy_log = { version = "0.16", default-features = false }
+bevy_math = { version = "0.16", default-features = false }
+bevy_mesh = { version = "0.16", default-features = false }
+bevy_reflect = { version = "0.16", default-features = false }
+bevy_render = { version = "0.16", default-features = false }
+bevy_transform = { version = "0.16", default-features = false }
 
 [dev-dependencies]
 criterion = { version = "0.5", default-features = false, features = [
 	"cargo_bench_support",
 ] }
-bevy = "0.16.0-rc.4"
+bevy = "0.16"
 rand = "0.8"
 
 [features]
