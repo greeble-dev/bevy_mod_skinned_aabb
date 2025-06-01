@@ -28,6 +28,23 @@ fn main() {
 
 The plugin will automatically detect and update any skinned meshes that are added to the world.
 
+## Limitations
+
+- Skinned AABBs require the meshes to be flagged as `RenderAssetUsages::MAIN_WORLD`.
+    - This is enabled by default in most cases - if you're simply loading glTF
+      files then you don't have to do anything.
+    - If you're making custom meshes, check `Mesh::asset_usage` or the `asset_usage` parameter of `Mesh::new`.
+- Skinned AABBs do not account for blend shapes and vertex shader shenanigans.
+    - Meshes that use these features may have incorrect AABBs.
+    - Meshes that only use skinning are safe.
+- Skinned AABBs are conservative but not optimal.
+    - They're conservative in that the AABB is guaranteed to contain the mesh's vertices.
+    - But they're not optimal, in that the AABB may be larger than necessary.
+- Apps that use hundreds of different skinned mesh assets may have performance issues.
+    - Each different asset adds some overhead to spawning mesh instances.
+    - It's fine to spawn many instances of a small number of assets.
+- The AABBs might be wrong for one frame immediately after spawning.
+
 ## Bevy Compatibility
 
 | bevy          | bevy_mod_skinned_aabb |
@@ -50,19 +67,6 @@ cargo run --example showcase
 # Stress test 1000 skinned meshes.
 cargo run --example many_foxes
 ```
-
-## Limitations
-
-- Skinned AABBs do not account for blend shapes and vertex shader shenanigans.
-    - Meshes that use these features may have incorrect AABBs.
-    - Meshes that only use skinning are safe.
-- Skinned AABBs are conservative but not optimal.
-    - They're conservative in that the AABB is guaranteed to contain the mesh's vertices.
-    - But they're not optimal, in that the AABB may be larger than necessary.
-- Apps that use hundreds of different skinned mesh assets may have performance issues.
-    - Each different asset adds some overhead to spawning mesh instances.
-    - It's fine to spawn many instances of a small number of assets.
-- The AABBs might be wrong for one frame immediately after spawning.
 
 ## FAQ
 
