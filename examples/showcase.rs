@@ -1,6 +1,7 @@
 use bevy::{
     asset::RenderAssetUsages,
     input::common_conditions::input_just_pressed,
+    picking::{backend::ray::RayMap, mesh_picking::ray_cast::ray_aabb_intersection_3d},
     prelude::*,
     render::mesh::{
         PrimitiveTopology, VertexAttributeValues,
@@ -8,7 +9,9 @@ use bevy::{
     },
     scene::SceneInstanceReady,
 };
-use bevy_mod_skinned_aabb::prelude::*;
+use bevy_math::{Affine3A, bounding::Aabb3d};
+use bevy_mod_skinned_aabb::{SkinnedAabb, SkinnedAabbAsset, prelude::*};
+use bevy_render::primitives::Aabb;
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
 
 fn main() {
@@ -40,6 +43,7 @@ fn main() {
         .add_systems(Update, spawn_gltf_mesh_scenes)
         .add_systems(Update, update_custom_mesh_animation)
         .add_systems(Update, update_turntables)
+        .add_systems(Update, raycast.after(TransformSystem::TransformPropagate))
         .run();
 }
 
@@ -356,5 +360,54 @@ struct Turntable;
 fn update_turntables(mut query: Query<(&mut Transform, &Turntable)>, time: Res<Time<Virtual>>) {
     for (mut transform, _) in &mut query {
         transform.rotation = Quat::from_rotation_y(time.elapsed_secs() * 0.5);
+    }
+}
+
+// TODO: Avoid duplication from debug.rs.
+fn gizmo_transform_from_aabb(aabb: Aabb) -> Affine3A {
+    let s = aabb.half_extents * 2.0;
+
+    Affine3A::from_cols(
+        Vec3A::new(s.x, 0.0, 0.0),
+        Vec3A::new(0.0, s.y, 0.0),
+        Vec3A::new(0.0, 0.0, s.z),
+        aabb.center,
+    )
+}
+
+// TODO: Avoid duplication from debug.rs.
+fn gizmo_transform_from_aabb3d(aabb: Aabb3d) -> Affine3A {
+    gizmo_transform_from_aabb(Aabb::from_min_max(aabb.min.into(), aabb.max.into()))
+}
+
+fn raycast(
+    query: Query<(&SkinnedAabb, &SkinnedMesh)>,
+    joints: Query<&GlobalTransform>,
+    mut gizmos: Gizmos,
+    assets: Res<Assets<SkinnedAabbAsset>>,
+    ray_map: Res<RayMap>,
+) {
+    for (_, ray) in ray_map.iter() {
+        query.iter().for_each(|(skinned_aabb, skinned_mesh)| {
+            if let Some(asset) = assets.get(&skinned_aabb.asset) {
+                for aabb_index in 0..asset.num_aabbs() {
+                    if let Some(world_from_joint) =
+                        asset.world_from_joint(aabb_index, skinned_mesh, &joints)
+                        && ray_aabb_intersection_3d(
+                            *ray,
+                            &asset.aabb(aabb_index).into(),
+                            &world_from_joint.into(),
+                        )
+                        .is_some()
+                    {
+                        let joint_from_aabb =
+                            gizmo_transform_from_aabb3d(asset.aabb(aabb_index).into());
+                        let world_from_aabb = world_from_joint * joint_from_aabb;
+
+                        gizmos.cuboid(world_from_aabb, Color::WHITE);
+                    }
+                }
+            }
+        })
     }
 }
