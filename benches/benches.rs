@@ -29,9 +29,30 @@ struct MeshParams {
     num_joints: usize,
 }
 
+pub fn core_data() -> (usize, Vec<PackedAabb3d>, Vec<Affine3A>) {
+    let count: usize =
+        black_box((128 * 1024) / (size_of::<PackedAabb3d>() + size_of::<Affine3A>()));
+
+    let aabbs = vec![
+        PackedAabb3d {
+            min: Vec3::ZERO,
+            max: Vec3::ZERO,
+        };
+        count
+    ];
+
+    let joints = vec![Affine3A::IDENTITY; count];
+
+    (count, aabbs, joints)
+}
+
 #[inline(never)]
-fn core_inner(aabbs: &[PackedAabb3d], joints: &[Affine3A]) -> Aabb3d {
-    let count = aabbs.len();
+fn core_basic_fold_inner(aabbs: &[PackedAabb3d], joints: &[Affine3A]) -> Aabb3d {
+    let count = aabbs.len().min(joints.len());
+
+    if count == 0 {
+        panic!()
+    }
 
     let mut t = Aabb3d {
         min: Vec3A::MAX,
@@ -45,26 +66,82 @@ fn core_inner(aabbs: &[PackedAabb3d], joints: &[Affine3A]) -> Aabb3d {
     t
 }
 
-pub fn core(c: &mut Criterion) {
-    let mut group = c.benchmark_group("core");
+#[inline(never)]
+fn core_basic_reduce_inner(aabbs: &[PackedAabb3d], joints: &[Affine3A]) -> Aabb3d {
+    let count = aabbs.len().min(joints.len());
 
-    let count: usize =
-        black_box((128 * 1024) / (size_of::<PackedAabb3d>() + size_of::<Affine3A>()));
+    if count == 0 {
+        panic!()
+    }
+
+    let mut t = aabb_transformed_by(aabbs[0], joints[0]);
+
+    for index in 1..count {
+        t = t.merge(&aabb_transformed_by(aabbs[index], joints[index]));
+    }
+
+    t
+}
+
+pub fn core_basic(c: &mut Criterion) {
+    let mut group = c.benchmark_group("core_basic");
+
+    let (count, aabbs, joints) = core_data();
 
     group.throughput(Throughput::Elements(count as u64));
 
-    let aabbs = vec![
-        PackedAabb3d {
-            min: Vec3::ZERO,
-            max: Vec3::ZERO,
-        };
-        count
-    ];
+    group.bench_function(format!("basic fold, count = {count}"), |b| {
+        b.iter(|| black_box(core_basic_fold_inner(&aabbs, &joints)))
+    });
 
-    let joints = vec![Affine3A::IDENTITY; count];
+    group.bench_function(format!("basic reduce, count = {count}"), |b| {
+        b.iter(|| black_box(core_basic_reduce_inner(&aabbs, &joints)))
+    });
+}
 
-    group.bench_function(format!("count = {count}"), |b| {
-        b.iter(|| black_box(core_inner(&aabbs, &joints)))
+#[inline(never)]
+fn core_fancy_fold_inner(aabbs: &[PackedAabb3d], joints: &[Affine3A]) -> Aabb3d {
+    let count = aabbs.len().min(joints.len());
+
+    if count == 0 {
+        panic!()
+    }
+
+    let initial = Aabb3d {
+        min: Vec3A::MAX,
+        max: Vec3A::MIN,
+    };
+
+    aabbs
+        .iter()
+        .zip(joints.iter())
+        .map(|(aabb, joint)| aabb_transformed_by(*aabb, *joint))
+        .fold(initial, |l, r| l.merge(&r))
+}
+
+#[inline(never)]
+fn core_fancy_reduce_inner(aabbs: &[PackedAabb3d], joints: &[Affine3A]) -> Aabb3d {
+    aabbs
+        .iter()
+        .zip(joints.iter())
+        .map(|(aabb, joint)| aabb_transformed_by(*aabb, *joint))
+        .reduce(|l, r| l.merge(&r))
+        .unwrap()
+}
+
+pub fn core_fancy(c: &mut Criterion) {
+    let mut group = c.benchmark_group("core_fancy");
+
+    let (count, aabbs, joints) = core_data();
+
+    group.throughput(Throughput::Elements(count as u64));
+
+    group.bench_function(format!("fancy fold, count = {count}"), |b| {
+        b.iter(|| black_box(core_fancy_fold_inner(&aabbs, &joints)))
+    });
+
+    group.bench_function(format!("fancy reduce, count = {count}"), |b| {
+        b.iter(|| black_box(core_fancy_reduce_inner(&aabbs, &joints)))
     });
 }
 
@@ -209,5 +286,5 @@ pub fn systems(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, core, systems);
+criterion_group!(benches, core_basic, core_fancy, systems);
 criterion_main!(benches);
