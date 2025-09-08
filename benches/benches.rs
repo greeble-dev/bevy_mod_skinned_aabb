@@ -48,19 +48,23 @@ fn core_inner(aabbs: &[PackedAabb3d], joints: &[Affine3A]) -> Aabb3d {
 pub fn core(c: &mut Criterion) {
     let mut group = c.benchmark_group("core");
 
-    const COUNT: usize = (128 * 1024) / (size_of::<PackedAabb3d>() + size_of::<Affine3A>());
+    let count: usize =
+        black_box((128 * 1024) / (size_of::<PackedAabb3d>() + size_of::<Affine3A>()));
 
-    group.throughput(Throughput::Elements(COUNT as u64));
+    group.throughput(Throughput::Elements(count as u64));
 
-    let aabbs = &[PackedAabb3d {
-        min: Vec3::ZERO,
-        max: Vec3::ZERO,
-    }; COUNT];
+    let aabbs = vec![
+        PackedAabb3d {
+            min: Vec3::ZERO,
+            max: Vec3::ZERO,
+        };
+        count
+    ];
 
-    let joints = &[Affine3A::IDENTITY; COUNT];
+    let joints = vec![Affine3A::IDENTITY; count];
 
-    group.bench_function(format!("count = {COUNT}"), |b| {
-        b.iter(move || black_box(core_inner(aabbs, joints)))
+    group.bench_function(format!("count = {count}"), |b| {
+        b.iter(|| black_box(core_inner(&aabbs, &joints)))
     });
 }
 
