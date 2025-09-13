@@ -1,6 +1,6 @@
 [package]
 name = "bevy_mod_skinned_aabb"
-version = "0.2.0"
+version = "0.3.0-rc.1"
 description = "A Bevy plugin that automatically calculates AABBs for skinned meshes"
 authors = ["Greeble <greeble@greeble.dev>"]
 repository = "https://github.com/greeble-dev/bevy_mod_skinned_aabb"
