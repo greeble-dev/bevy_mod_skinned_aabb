@@ -2,8 +2,8 @@
 mod dev;
 
 use bevy::prelude::*;
+use bevy_camera::{ScalingMode, primitives::Aabb};
 use bevy_mesh::skinning::{SkinnedMesh, SkinnedMeshInverseBindposes};
-use bevy_render::{camera::ScalingMode, primitives::Aabb};
 use dev::{skin, spawn_random_mesh_selection, update_random_mesh_animations};
 
 fn main() {

@@ -11,6 +11,7 @@ use bevy::{
     time::{Time, Virtual},
 };
 use bevy_asset::{Assets, Handle, RenderAssetUsages};
+use bevy_camera::{primitives::Aabb, visibility::Visibility};
 use bevy_color::Color;
 use bevy_ecs::{
     change_detection::{Res, ResMut},
@@ -26,13 +27,12 @@ use bevy_math::{
     ops,
 };
 use bevy_mesh::{
-    Mesh, MeshVertexAttributeId, PrimitiveTopology, VertexAttributeValues,
+    Mesh, Mesh3d, MeshVertexAttributeId, PrimitiveTopology, VertexAttributeValues,
     skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
 };
 use bevy_mod_skinned_aabb::{
     JointIndex, MAX_INFLUENCES, SkinnedAabbAsset, SkinnedAabbPluginSettings,
 };
-use bevy_render::{mesh::Mesh3d, primitives::Aabb, view::visibility::Visibility};
 use bevy_transform::components::{GlobalTransform, Transform};
 use rand::{
     Rng, SeedableRng,
@@ -268,7 +268,7 @@ fn create_random_inverse_bindposes(
     num_joints: usize,
 ) -> SkinnedMeshInverseBindposes {
     // Leaving the root as identity makes it more visually pleasing.
-    let iter = once(Mat4::IDENTITY).chain(repeat_with(|| random_transform(rng).compute_matrix()));
+    let iter = once(Mat4::IDENTITY).chain(repeat_with(|| random_transform(rng).to_matrix()));
 
     SkinnedMeshInverseBindposes::from(iter.take(num_joints).collect::<Vec<_>>())
 }

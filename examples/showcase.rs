@@ -1,17 +1,17 @@
 use bevy::{
     asset::RenderAssetUsages,
     input::common_conditions::input_just_pressed,
-    picking::{backend::ray::RayMap, mesh_picking::ray_cast::ray_aabb_intersection_3d},
-    prelude::*,
-    render::mesh::{
+    mesh::{
         PrimitiveTopology, VertexAttributeValues,
         skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
     },
+    picking::{backend::ray::RayMap, mesh_picking::ray_cast::ray_aabb_intersection_3d},
+    prelude::*,
     scene::SceneInstanceReady,
 };
+use bevy_camera::primitives::Aabb;
 use bevy_math::{Affine3A, bounding::Aabb3d};
 use bevy_mod_skinned_aabb::{SkinnedAabb, SkinnedAabbAsset, prelude::*};
-use bevy_render::primitives::Aabb;
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
 
 fn main() {
@@ -43,7 +43,7 @@ fn main() {
         .add_systems(Update, spawn_gltf_mesh_scenes)
         .add_systems(Update, update_custom_mesh_animation)
         .add_systems(Update, update_turntables)
-        .add_systems(Update, raycast.after(TransformSystem::TransformPropagate))
+        .add_systems(Update, raycast.after(TransformSystems::Propagate))
         .run();
 }
 
@@ -159,18 +159,14 @@ fn spawn_gltf_mesh_scenes(
 }
 
 fn play_gltf_mesh_animations(
-    trigger: Trigger<SceneInstanceReady>,
+    trigger: On<SceneInstanceReady>,
     mut commands: Commands,
     children: Query<&Children>,
     animations: Query<&GltfPendingAnimation>,
     mut players: Query<&mut AnimationPlayer>,
 ) {
-    commands
-        .entity(trigger.target())
-        .remove::<GltfPendingAnimation>();
-
-    if let Ok(animation) = animations.get(trigger.target()) {
-        for child in children.iter_descendants(trigger.target()) {
+    if let Ok(animation) = animations.get(trigger.entity) {
+        for child in children.iter_descendants(trigger.entity) {
             if let Ok(mut player) = players.get_mut(child) {
                 player
                     .play(animation.graph_node_index)
@@ -183,6 +179,10 @@ fn play_gltf_mesh_animations(
             }
         }
     }
+
+    commands
+        .entity(trigger.entity)
+        .remove::<GltfPendingAnimation>();
 }
 
 type CustomAnimationId = i8;
@@ -396,7 +396,7 @@ fn raycast(
                         && ray_aabb_intersection_3d(
                             *ray,
                             &asset.aabb(aabb_index).into(),
-                            &world_from_joint.into(),
+                            &world_from_joint,
                         )
                         .is_some()
                     {

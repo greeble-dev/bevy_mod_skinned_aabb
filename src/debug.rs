@@ -1,5 +1,6 @@
 use bevy_app::{App, Plugin, PostUpdate};
 use bevy_asset::Assets;
+use bevy_camera::primitives::Aabb;
 use bevy_color::{Color, Oklcha};
 use bevy_ecs::{
     change_detection::{Res, ResMut},
@@ -13,8 +14,7 @@ use bevy_gizmos::{AppGizmoBuilder, config::GizmoConfigGroup, gizmos::Gizmos};
 use bevy_math::{Affine3A, Vec3A, bounding::Aabb3d};
 use bevy_mesh::skinning::SkinnedMesh;
 use bevy_reflect::Reflect;
-use bevy_render::primitives::Aabb;
-use bevy_transform::{TransformSystem, components::GlobalTransform};
+use bevy_transform::{components::GlobalTransform, plugins::TransformSystems};
 
 use crate::{SkinnedAabb, SkinnedAabbAsset};
 
@@ -67,10 +67,10 @@ impl Plugin for SkinnedAabbDebugPlugin {
             PostUpdate,
             (
                 draw_joint_aabbs
-                    .after(TransformSystem::TransformPropagate)
+                    .after(TransformSystems::Propagate)
                     .run_if(|config: Res<SkinnedAabbDebugConfig>| config.draw_joint_aabbs),
                 draw_mesh_aabbs
-                    .after(TransformSystem::TransformPropagate)
+                    .after(TransformSystems::Propagate)
                     .run_if(|config: Res<SkinnedAabbDebugConfig>| config.draw_mesh_aabbs),
             ),
         );

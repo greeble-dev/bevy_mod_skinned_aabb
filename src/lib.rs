@@ -1,5 +1,6 @@
 use bevy_app::{App, Plugin, PostUpdate, Update};
 use bevy_asset::{Asset, AssetApp, AssetId, Assets, Handle};
+use bevy_camera::{primitives::Aabb, visibility::VisibilitySystems};
 use bevy_ecs::{
     change_detection::{Res, ResMut},
     component::Component,
@@ -16,13 +17,13 @@ use bevy_math::{
     Affine3A, Vec3, Vec3A,
     bounding::{Aabb3d, BoundingVolume},
 };
+use bevy_mesh::Mesh3d;
 use bevy_mesh::{
     Mesh, VertexAttributeValues,
     skinning::{SkinnedMesh, SkinnedMeshInverseBindposes},
 };
 use bevy_reflect::{Reflect, TypePath};
-use bevy_render::{mesh::Mesh3d, primitives::Aabb, view::VisibilitySystems};
-use bevy_transform::{TransformSystem, components::GlobalTransform};
+use bevy_transform::{TransformSystems, components::GlobalTransform};
 
 pub mod debug;
 
@@ -42,7 +43,7 @@ impl Plugin for SkinnedAabbPlugin {
             .add_systems(
                 PostUpdate,
                 update_skinned_aabbs
-                    .after(TransformSystem::TransformPropagate)
+                    .after(TransformSystems::Propagate)
                     .before(VisibilitySystems::CheckVisibility),
             );
     }
@@ -334,12 +335,17 @@ fn create_skinned_aabb_component(
     // TODO: Linear search is not great if there's many assets. But in the
     // long run this should all move to the asset pipeline.
 
-    if let Some((existing_asset_id, _)) = skinned_aabb_assets
+    let existing_asset_id = skinned_aabb_assets
         .iter()
         .find(|(_, candidate_asset)| candidate_asset.source == source)
+        .map(|(id, _)| id);
+
+    if let Some(existing_asset_id) = existing_asset_id
+        && let Some(existing_asset_handle) =
+            skinned_aabb_assets.get_strong_handle(existing_asset_id)
     {
         return Some(SkinnedAabb {
-            asset: Handle::Weak(existing_asset_id),
+            asset: existing_asset_handle,
         });
     }
 
