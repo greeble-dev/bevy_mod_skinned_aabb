@@ -17,6 +17,8 @@ jobs:
         steps:
             - uses: actions/checkout@v5
             - uses: dtolnay/rust-toolchain@stable
+              with:
+                components: rustfmt, clippy
             - uses: Swatinem/rust-cache@v2
             - name: Update Packages
               run: sudo apt-get update -yq
