@@ -93,6 +93,21 @@ impl From<Aabb3d> for PackedAabb3d {
     }
 }
 
+#[derive(Copy, Clone, Debug, Reflect)]
+pub struct PackedAabbCe3d {
+    pub center: Vec3,
+    pub half_extent: Vec3,
+}
+
+impl From<PackedAabb3d> for PackedAabbCe3d {
+    fn from(value: PackedAabb3d) -> Self {
+        Self {
+            center: (value.min + value.max) * 0.5,
+            half_extent: (value.max - value.min) * 0.5,
+        }
+    }
+}
+
 // The assets that are used to create a `SkinnedAabbAsset`.
 #[derive(PartialEq, Eq, Debug)]
 pub struct SkinnedAabbSourceAssets {
@@ -443,6 +458,135 @@ pub fn aabb_transformed_by(input: PackedAabb3d, transform: Affine3A) -> Aabb3d {
     Aabb3d { min, max }
 }
 
+/*
+#[inline]
+pub fn aabb_ce_transformed_by(input: PackedAabbCe3d, transform: Affine3A) -> Aabb3d {
+    let rs = transform.matrix3;
+    let t = transform.translation;
+
+    let nc = rs.mul_vec3a(input.center) + t;
+
+    let a_x = rs.x_axis.abs();
+    let a_y = rs.y_axis.abs();
+    let a_z = rs.z_axis.abs();
+
+    let b_x = a_x * Vec3A::splat(input.half_extent.x);
+    let b_y = a_y * Vec3A::splat(input.half_extent.y);
+    let b_z = a_z * Vec3A::splat(input.half_extent.z);
+
+    let nh = b_x + b_y + b_z;
+
+    let min = nc - nh;
+    let max = nc + nh;
+
+    Aabb3d { min, max }
+}
+*/
+
+/*
+#[inline]
+pub fn aabb_ce_transformed_by(input: PackedAabbCe3d, transform: Affine3A) -> Aabb3d {
+    let m_x = transform.matrix3.x_axis;
+    let m_y = transform.matrix3.y_axis;
+    let m_z = transform.matrix3.z_axis;
+
+    let c_x = Vec3A::splat(input.center.x);
+    let c_y = Vec3A::splat(input.center.y);
+    let c_z = Vec3A::splat(input.center.z);
+
+    let m_t = transform.translation;
+
+    let nc = (m_x * c_x) + (m_y * c_y) + (m_z * c_z) + m_t;
+
+    let a_x = m_x.abs();
+    let a_y = m_y.abs();
+    let a_z = m_z.abs();
+
+    let b_x = a_x * Vec3A::splat(input.half_extent.x);
+    let b_y = a_y * Vec3A::splat(input.half_extent.y);
+    let b_z = a_z * Vec3A::splat(input.half_extent.z);
+
+    let nh = b_x + b_y + b_z;
+
+    let min = nc - nh;
+    let max = nc + nh;
+
+    Aabb3d { min, max }
+}
+*/
+
+/*
+#[inline]
+pub fn aabb_ce_transformed_by(input: PackedAabbCe3d, transform: Affine3A) -> Aabb3d {
+    let m_x = transform.matrix3.x_axis;
+    let m_y = transform.matrix3.y_axis;
+    let m_z = transform.matrix3.z_axis;
+
+    let c_x = Vec3A::splat(input.center.x);
+    let c_y = Vec3A::splat(input.center.y);
+    let c_z = Vec3A::splat(input.center.z);
+
+    let h_x = Vec3A::splat(input.half_extent.x);
+    let h_y = Vec3A::splat(input.half_extent.y);
+    let h_z = Vec3A::splat(input.half_extent.z);
+
+    let m_t = transform.translation;
+
+    let nc = (m_x * c_x) + (m_y * c_y) + (m_z * c_z) + m_t;
+
+    let ma_x = m_x.abs();
+    let ma_y = m_y.abs();
+    let ma_z = m_z.abs();
+
+    let nh_x = ma_x * h_x;
+    let nh_y = ma_y * h_y;
+    let nh_z = ma_z * h_z;
+
+    let nh = nh_x + nh_y + nh_z;
+
+    let min = nc - nh;
+    let max = nc + nh;
+
+    Aabb3d { min, max }
+}
+*/
+
+#[inline]
+pub fn aabb_ce_transformed_by(input: PackedAabbCe3d, transform: Affine3A) -> Aabb3d {
+    let m_x = transform.matrix3.x_axis;
+    let m_y = transform.matrix3.y_axis;
+    let m_z = transform.matrix3.z_axis;
+
+    let c_x = Vec3A::splat(input.center.x);
+    let c_y = Vec3A::splat(input.center.y);
+    let c_z = Vec3A::splat(input.center.z);
+
+    let h_x = Vec3A::splat(input.half_extent.x);
+    let h_y = Vec3A::splat(input.half_extent.y);
+    let h_z = Vec3A::splat(input.half_extent.z);
+
+    let m_t = transform.translation;
+
+    #[cfg(target_feature = "fma")]
+    let nc = m_x.mul_add(c_x, m_y.mul_add(c_y, m_z.mul_add(c_z, m_t)));
+    #[cfg(not(target_feature = "fma"))]
+    let nc = (m_x * c_x) + (m_y * c_y) + (m_z * c_z) + m_t;
+
+    let ma_x = m_x.abs();
+    let ma_y = m_y.abs();
+    let ma_z = m_z.abs();
+
+    #[cfg(target_feature = "fma")]
+    let nh = ma_x.mul_add(h_x, ma_y.mul_add(h_y, ma_z * h_z));
+    #[cfg(not(target_feature = "fma"))]
+    let nh = (ma_x * h_x) + (ma_y * h_y) + (ma_z * h_z);
+
+    let min = nc - nh;
+    let max = nc + nh;
+
+    Aabb3d { min, max }
+}
+
 // Given a skinned mesh and world-space joints, return the entity-space AABB.
 // Returns None if no joints were found or the asset was not found.
 fn get_skinned_aabb(
@@ -470,7 +614,9 @@ fn get_skinned_aabb(
     for aabb_index in 0..num_aabbs {
         if let Some(world_from_joint) = asset.world_from_joint(aabb_index, skinned_mesh, joints) {
             let entity_from_joint = entity_from_world * world_from_joint;
-            let joint_aabb = aabb_transformed_by(asset.aabb(aabb_index), entity_from_joint);
+            //let joint_aabb = aabb_transformed_by(asset.aabb(aabb_index), entity_from_joint);
+            let joint_aabb =
+                aabb_ce_transformed_by(asset.aabb(aabb_index).into(), entity_from_joint);
 
             entity_aabb = entity_aabb.merge(&joint_aabb);
         }

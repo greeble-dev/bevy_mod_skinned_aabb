@@ -16,7 +16,7 @@ use bevy_mesh::skinning::SkinnedMesh;
 use bevy_reflect::Reflect;
 use bevy_transform::{components::GlobalTransform, plugins::TransformSystems};
 
-use crate::{SkinnedAabb, SkinnedAabbAsset};
+use crate::{SkinnedAabb, SkinnedAabbAsset, aabb_ce_transformed_by};
 
 pub mod prelude {
     pub use crate::debug::{
@@ -117,9 +117,17 @@ fn draw_joint_aabbs(
                 if let Some(world_from_joint) =
                     asset.world_from_joint(aabb_index, skinned_mesh, &joints)
                 {
+                    /*
                     let joint_from_aabb =
                         gizmo_transform_from_aabb3d(asset.aabb(aabb_index).into());
                     let world_from_aabb = world_from_joint * joint_from_aabb;
+                    */
+
+                    //let joint_aabb = aabb_transformed_by(asset.aabb(aabb_index), world_from_joint);
+                    let joint_aabb =
+                        aabb_ce_transformed_by(asset.aabb(aabb_index).into(), world_from_joint);
+
+                    let world_from_aabb = gizmo_transform_from_aabb3d(joint_aabb);
 
                     gizmos.cuboid(world_from_aabb, Color::WHITE);
                 }

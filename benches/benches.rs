@@ -9,8 +9,8 @@ use bevy_math::{
 };
 use bevy_mesh::{Mesh, skinning::SkinnedMeshInverseBindposes};
 use bevy_mod_skinned_aabb::{
-    PackedAabb3d, SkinnedAabbPluginSettings, aabb_transformed_by, create_skinned_aabbs,
-    update_skinned_aabbs,
+    PackedAabb3d, PackedAabbCe3d, SkinnedAabbPluginSettings, aabb_ce_transformed_by,
+    aabb_transformed_by, create_skinned_aabbs, update_skinned_aabbs,
 };
 use bevy_transform::prelude::*;
 use core::time::Duration;
@@ -46,6 +46,23 @@ pub fn core_data() -> (usize, Vec<PackedAabb3d>, Vec<Affine3A>) {
     (count, aabbs, joints)
 }
 
+pub fn core_data_ce() -> (usize, Vec<PackedAabbCe3d>, Vec<Affine3A>) {
+    let count: usize =
+        black_box((128 * 1024) / (size_of::<PackedAabbCe3d>() + size_of::<Affine3A>()));
+
+    let aabbs = vec![
+        PackedAabbCe3d {
+            center: Vec3::ZERO,
+            half_extent: Vec3::ZERO,
+        };
+        count
+    ];
+
+    let joints = vec![Affine3A::IDENTITY; count];
+
+    (count, aabbs, joints)
+}
+
 #[inline(never)]
 fn core_basic_fold_inner(aabbs: &[PackedAabb3d], joints: &[Affine3A]) -> Aabb3d {
     let count = aabbs.len().min(joints.len());
@@ -61,6 +78,26 @@ fn core_basic_fold_inner(aabbs: &[PackedAabb3d], joints: &[Affine3A]) -> Aabb3d 
 
     for index in 0..count {
         t = t.merge(&aabb_transformed_by(aabbs[index], joints[index]));
+    }
+
+    t
+}
+
+#[inline(never)]
+fn core_ce_basic_fold_inner(aabbs: &[PackedAabbCe3d], joints: &[Affine3A]) -> Aabb3d {
+    let count = aabbs.len().min(joints.len());
+
+    if count == 0 {
+        panic!()
+    }
+
+    let mut t = Aabb3d {
+        min: Vec3A::MAX,
+        max: Vec3A::MIN,
+    };
+
+    for index in 0..count {
+        t = t.merge(&aabb_ce_transformed_by(aabbs[index], joints[index]));
     }
 
     t
@@ -86,17 +123,29 @@ fn core_basic_reduce_inner(aabbs: &[PackedAabb3d], joints: &[Affine3A]) -> Aabb3
 pub fn core_basic(c: &mut Criterion) {
     let mut group = c.benchmark_group("core_basic");
 
-    let (count, aabbs, joints) = core_data();
+    {
+        let (count, aabbs, joints) = core_data_ce();
 
-    group.throughput(Throughput::Elements(count as u64));
+        group.throughput(Throughput::Elements(count as u64));
 
-    group.bench_function(format!("basic fold, count = {count}"), |b| {
-        b.iter(|| black_box(core_basic_fold_inner(&aabbs, &joints)))
-    });
+        group.bench_function(format!("CE basic fold, count = {count}"), |b| {
+            b.iter(|| black_box(core_ce_basic_fold_inner(&aabbs, &joints)))
+        });
+    }
 
-    group.bench_function(format!("basic reduce, count = {count}"), |b| {
-        b.iter(|| black_box(core_basic_reduce_inner(&aabbs, &joints)))
-    });
+    {
+        let (count, aabbs, joints) = core_data();
+
+        group.throughput(Throughput::Elements(count as u64));
+
+        group.bench_function(format!("basic fold, count = {count}"), |b| {
+            b.iter(|| black_box(core_basic_fold_inner(&aabbs, &joints)))
+        });
+
+        group.bench_function(format!("basic reduce, count = {count}"), |b| {
+            b.iter(|| black_box(core_basic_reduce_inner(&aabbs, &joints)))
+        });
+    }
 }
 
 #[inline(never)]
