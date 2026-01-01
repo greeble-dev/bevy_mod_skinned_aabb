@@ -25,7 +25,7 @@ fn main() {
         }))
         .add_plugins(SkinnedAabbPlugin)
         .add_plugins(SkinnedAabbDebugPlugin::enable_by_default())
-        .insert_resource(AmbientLight {
+        .insert_resource(GlobalAmbientLight {
             brightness: 2000.0,
             ..Default::default()
         })
@@ -404,7 +404,7 @@ fn raycast(
                             gizmo_transform_from_aabb3d(asset.aabb(aabb_index).into());
                         let world_from_aabb = world_from_joint * joint_from_aabb;
 
-                        gizmos.cuboid(world_from_aabb, Color::WHITE);
+                        gizmos.cube(world_from_aabb, Color::WHITE);
                     }
                 }
             }

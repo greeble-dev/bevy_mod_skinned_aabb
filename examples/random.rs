@@ -19,7 +19,7 @@ fn main() {
         }))
         .add_plugins(SkinnedAabbPlugin)
         .add_plugins(SkinnedAabbDebugPlugin::enable_by_default())
-        .insert_resource(AmbientLight {
+        .insert_resource(GlobalAmbientLight {
             brightness: 2000.0,
             ..Default::default()
         })

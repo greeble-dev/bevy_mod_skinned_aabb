@@ -8,7 +8,7 @@ use dev::{skin, spawn_random_mesh_selection, update_random_mesh_animations};
 
 fn main() {
     App::new()
-        .insert_resource(AmbientLight {
+        .insert_resource(GlobalAmbientLight {
             brightness: 2000.,
             ..Default::default()
         })

@@ -54,7 +54,7 @@ fn main() {
             moving: true,
             sync: false,
         })
-        .insert_resource(AmbientLight {
+        .insert_resource(GlobalAmbientLight {
             brightness: 2000.0,
             ..Default::default()
         })
@@ -243,7 +243,7 @@ fn setup_scene_once_loaded(
 
             let playing_animation = player.play(animations.node_indices[0]).repeat();
             if !foxes.sync {
-                playing_animation.seek_to(entity.index() as f32 / 10.0);
+                playing_animation.seek_to(entity.index_u32() as f32 / 10.0);
             }
         }
         *done = true;

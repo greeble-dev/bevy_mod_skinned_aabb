@@ -8,7 +8,7 @@ The goal of the plugin is to [fix meshes disappearing due to incorrect AABBs](ht
 
 ## Quick Start
 
-To enable skinned AABBs in a Bevy 0.17 app:
+To enable skinned AABBs in a Bevy 0.18 app:
 
 ```sh
 cargo add bevy_mod_skinned_aabb
@@ -49,6 +49,7 @@ The plugin will automatically detect and update any skinned meshes that are adde
 
 | bevy          | bevy_mod_skinned_aabb |
 |---------------|-----------------------|
+| `0.18.0-rc.1` | `0.4.0-rc.1`          |
 | `0.17`        | `0.3`                 |
 | `0.16`        | `0.2`                 |
 | `0.15`        | `0.1`                 |

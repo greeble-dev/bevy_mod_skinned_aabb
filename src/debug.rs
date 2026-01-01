@@ -121,7 +121,7 @@ fn draw_joint_aabbs(
                         gizmo_transform_from_aabb3d(asset.aabb(aabb_index).into());
                     let world_from_aabb = world_from_joint * joint_from_aabb;
 
-                    gizmos.cuboid(world_from_aabb, Color::WHITE);
+                    gizmos.cube(world_from_aabb, Color::WHITE);
                 }
             }
         }
@@ -135,8 +135,8 @@ fn draw_mesh_aabbs(
     query.iter().for_each(|(entity, aabb, world_from_entity)| {
         let entity_from_aabb = gizmo_transform_from_aabb(*aabb);
         let world_from_aabb = world_from_entity.affine() * entity_from_aabb;
-        let color = Oklcha::sequential_dispersed(entity.index());
+        let color = Oklcha::sequential_dispersed(entity.index_u32());
 
-        gizmos.cuboid(world_from_aabb, color);
+        gizmos.cube(world_from_aabb, color);
     })
 }
