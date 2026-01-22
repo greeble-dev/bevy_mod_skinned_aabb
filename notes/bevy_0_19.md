@@ -1,7 +1,7 @@
 # Bevy 0.19 and `bevy_mod_skinned_aabb`
 
-Bevy 0.19 adds support for dynamic skinned mesh bounds, so
-`bevy_mod_skinned_aabb` is no longer required!
+Bevy 0.19 [adds support](https://github.com/bevyengine/bevy/pull/21837) for
+dynamic skinned mesh bounds, so `bevy_mod_skinned_aabb` is no longer required!
 
 ## Upgrading
 
