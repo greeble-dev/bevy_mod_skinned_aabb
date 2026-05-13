@@ -6,6 +6,9 @@ https://github.com/user-attachments/assets/73d236da-43a8-4b63-a19e-f3625d374077
 
 The goal of the plugin is to [fix meshes disappearing due to incorrect AABBs](https://github.com/bevyengine/bevy/issues/4971).
 
+**Bevy 0.19 adds support for automatic skinned mesh AABBs, so `bevy_mod_skinned_aabb` is no longer needed!
+See the [upgrade guide](https://github.com/greeble-dev/bevy_mod_skinned_aabb/blob/main/notes/bevy_0_19.md) for details.**
+
 ## Quick Start
 
 To enable skinned AABBs in a Bevy 0.18 app:
@@ -49,6 +52,7 @@ The plugin will automatically detect and update any skinned meshes that are adde
 
 | bevy          | bevy_mod_skinned_aabb |
 |---------------|-----------------------|
+| `0.19+`       | See [upgrade guide](https://github.com/greeble-dev/bevy_mod_skinned_aabb/blob/main/notes/bevy_0_19.md) |
 | `0.18`        | `0.4`                 |
 | `0.17`        | `0.3`                 |
 | `0.16`        | `0.2`                 |

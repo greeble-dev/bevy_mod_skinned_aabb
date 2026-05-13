@@ -1,7 +1,7 @@
 # Bevy 0.19 and `bevy_mod_skinned_aabb`
 
 Bevy 0.19 [adds support](https://github.com/bevyengine/bevy/pull/21837) for
-dynamic skinned mesh bounds, so `bevy_mod_skinned_aabb` is no longer required!
+automatic skinned mesh AABBs, so `bevy_mod_skinned_aabb` is no longer needed!
 
 ## Upgrading
 
@@ -15,8 +15,8 @@ cargo remove bevy_mod_skinned_aabb
 -    .add_plugins(SkinnedAabbPlugin)
 ```
 
-If your meshes come from the glTF loader then that's all you need to do - the 
-glTF loader will automatically enable dynamic skinned mesh bounds.
+If your meshes are loaded from glTFs then that's all you need to do - the glTF
+loader will automatically enable skinned mesh AABBs.
 
 If you create your skinned meshes without using the glTF loader, you'll need to
 call `Mesh::generate_skinned_mesh_bounds` or
@@ -50,7 +50,7 @@ fn toggle_skinned_mesh_bounds(mut config: ResMut<GizmoConfigStore>) {
 Bevy's implementation is slightly different to `bevy_mod_skinned_aabb`. This
 makes it faster and more reliable, but the calculated AABBs might change.
 
-If you only used `bevy_mod_skinned_aabb` to fix frustum culling then you're very
+If you used `bevy_mod_skinned_aabb` to fix meshes disappearing then you're 
 unlikely to notice a difference. If you used `bevy_mod_skinned_aabb` for
-collision or picking then you might find that the accuracy has increased or
+collision or picking then you might find that accuracy has increased or
 decreased.
